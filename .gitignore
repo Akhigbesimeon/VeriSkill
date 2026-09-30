@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment variables — never commit real secrets
+.env
+.env.local
+.env.staging
+.env.production
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Hardhat / contract artifacts (regenerated on compile)
+packages/contracts/artifacts/
+packages/contracts/cache/
+packages/contracts/typechain-types/
+
+# Deployment records — commit only when intentional
+# packages/contracts/deployments/localhost.json  ← intentionally tracked
+# packages/contracts/deployments/testnet.json    ← intentionally tracked
+
+# TypeScript
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+lcov.info
+
+# Expo / React Native
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Database
+*.sqlite
+*.sqlite3
