@@ -20,7 +20,7 @@ VeriSkill addresses these issues through a dual-platform system:
   3. *Peer Verification:* Community vouching.
   4. *Expert Review:* Admin panel verification.
 
-  #### Verification Layers and Trust Levels
+#### Verification Layers and Trust Levels
 The system calculates a dynamic Trust Score based on the completion of the verification layers to give recruiters a clear gradient of credential reliability:
 
 | Layer | Action | Trust Score | Recruiter Confidence |
