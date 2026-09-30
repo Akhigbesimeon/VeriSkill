@@ -104,3 +104,40 @@ npx expo start
 ```
 
 Scan the QR code generated in the terminal using the Expo Go app on your physical mobile device to test the recruiter interface.
+
+## Deployment Plan
+
+The deployment of VeriSkill is divided across multiple specialized hosting environments to ensure scalability and cost-effectiveness.
+
+### Phase 1: Database Deployment
+* **Platform:** AWS RDS (Relational Database Service)
+* **Action:** Provision a managed PostgreSQL instance. Secure the database within a VPC and whitelist the backend server IP addresses.
+
+### Phase 2: Smart Contract Deployment
+* **Platform:** Ethereum Testnet (e.g., Sepolia) / Mainnet
+* **Action:**
+  1. Run unit tests and gas optimization benchmarks using Hardhat.
+  2. Deploy the Yul-optimized Soulbound Token (SBT) contracts to the testnet.
+  3. Verify the contracts on Etherscan for transparency.
+  4. Update the contract addresses and ABIs in the Backend and Web application environment variables.
+
+### Phase 3: Backend API Deployment
+* **Platform:** AWS EC2 or Heroku
+* **Action:**
+  1. Containerize the Node.js/Express application using Docker.
+  2. Deploy the container to the hosting provider.
+  3. Set up environment variables (DB strings, Smart Contract addresses, Web3 RPCs, GitHub API keys).
+  4. Ensure the API is served over HTTPS using SSL certificates.
+
+### Phase 4: Web Application Deployment
+* **Platform:** Vercel
+* **Action:**
+  1. Connect the Next.js GitHub repository to Vercel.
+  2. Configure build commands and environment variables linking to the live Backend API.
+  3. Deploy the application, enabling automated CI/CD for future commits to the `main` branch.
+
+### Phase 5: Mobile Application Deployment
+* **Platform:** Expo Application Services (EAS)
+* **Action:**
+  1. Build the Android (`.apk` / `.aab`) and iOS applications using EAS Build.
+  2. Distribute the app to internal testers (the 5 local technical recruiters in Kigali) using EAS Submit or TestFlight/Google Play Console internal tracks.
