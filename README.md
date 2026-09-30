@@ -31,3 +31,76 @@ The system calculates a dynamic Trust Score based on the completion of the verif
 | 4 | Peer Verified (1-2 peers) | 60-80% | High - Community trust |
 | 5 | Community Verified (3+ peers) | 80-90% | Very High - Community endorsed |
 | 6 | Expert Verified | 90-100% | Highest - Expert validated |
+
+## Tech Stack
+
+* **Smart Contracts:** Solidity ^0.8.20, Yul Assembly, Hardhat, OpenZeppelin, Ethers.js
+* **Backend:** Node.js, Express.js, PostgreSQL, Sequelize (ORM), Web3.js, JWT
+* **Web Frontend:** Next.js 14 (App Router), TypeScript, Chakra UI, TanStack Query
+* **Mobile App:** Expo React Native
+* **Infrastructure:** Vercel, AWS EC2/Heroku, AWS RDS (PostgreSQL)
+
+## Environment Setup and Installation
+
+### Prerequisites
+
+Make sure you have the following installed on your local machine:
+* [Node.js](https://nodejs.org/) (v18+)
+* [PostgreSQL](https://www.postgresql.org/) (or Docker for running a local DB container)
+* [Expo CLI](https://docs.expo.dev/get-started/installation/)
+* Git
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/yourusername/veriskill.git
+cd veriskill
+```
+
+### 2. Smart Contract Setup
+
+```bash
+cd packages/contracts
+npm install
+# Create a .env file and add your testnet RPC URL and private key
+cp .env.example .env
+# Compile contracts
+npx hardhat compile
+# Run local node
+npx hardhat node
+```
+
+### 3. Backend Setup
+
+```bash
+cd ../backend
+npm install
+# Configure your .env file with DB credentials, JWT secret, GitHub API (Octokit) key, and RPC URL
+cp .env.example .env
+# Run database migrations
+npx sequelize-cli db:migrate
+# Start the backend server
+npm run dev
+```
+
+### 4. Web Application (Next.js) Setup
+
+```bash
+cd ../web
+npm install
+# Configure .env with the Backend API URL
+cp .env.local.example .env.local
+# Start the web development server
+npm run dev
+```
+
+### 5. Mobile Application (Expo) Setup
+
+```bash
+cd ../mobile
+npm install
+# Start the Expo bundler
+npx expo start
+```
+
+Scan the QR code generated in the terminal using the Expo Go app on your physical mobile device to test the recruiter interface.
