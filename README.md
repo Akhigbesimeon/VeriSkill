@@ -221,7 +221,16 @@ VeriSkill utilizes two distinct smart contracts during its development and testi
 
 <img width="958" height="504" alt="Image" src="https://github.com/user-attachments/assets/7fc96263-933a-4cca-9c3c-bc8af3c72244" />
 
+## Data visualization
+### 1. Transaction & Commitment Graph (VeriSkill Minting Flow)
+This structural graph visualizes how raw off-chain transaction data is organized, hashed, and securely recorded into a block using cryptographic linking. A Merkle Tree data structure produces a single digital fingerprint of all transactions within a block to efficiently verify integrity. In the context of your capstone, this maps the generation of the `commitHash` and its anchoring to the blockchain ledger.
 
+<img width="860" height="890" alt="Image" src="https://github.com/user-attachments/assets/a626f9fd-f32d-479a-b21a-1dc89d48d13c" />
+
+### 2. Consensus Algorithm Flow (Block Validation)
+Consensus mechanisms allow network participants to agree on a valid transaction ledger despite potential adversarial actions or node failures. For EVM-compatible networks, Proof of Stake (PoS) algorithms randomly assign validators based on their stake value to propose and validate new blocks.
+
+<img width="860" height="1179" alt="Image" src="https://github.com/user-attachments/assets/75952812-6ca7-47a7-804c-e3d9464fb663" />
 
 ## Environment Setup and Installation
 
