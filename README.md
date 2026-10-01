@@ -41,6 +41,7 @@ The system calculates a dynamic Trust Score based on the completion of the verif
 | 5 | Community Verified (3+ peers) | 80-90% | Very High - Community endorsed | 
 | 6 | Expert Verified | 90-100% | Highest - Expert validated | 
 
+
 ## Tech Stack
 
 * **Smart Contracts:** Solidity ^0.8.20, Yul Assembly, Hardhat, OpenZeppelin, Ethers.js
@@ -172,6 +173,35 @@ veriskill/
 ├── package.json                    # Root workspace definition
 └── README.md
 ```
+## Smart Contracts Architecture
+
+VeriSkill utilizes two distinct smart contracts during its development and testing lifecycle to prove its gas-optimization thesis. 
+
+### 1. VeriSkillCredential (Production Contract)
+
+**Functionality:** This is the core protocol contract. It acts as a non-transferable (Soulbound) Token representing a developer's verified skill claim. 
+* **Gas Optimized:** It utilizes tight struct packing to compress credential data into exactly 3 storage slots (compared to 7 in a standard implementation).
+* **Privacy Preserving:** It stores a cryptographic `commitHash` rather than raw PII (Personally Identifiable Information) or plain-text URLs on-chain.
+* **Access Control:** It uses OpenZeppelin's `AccessControl` for granular role management (`ISSUER_ROLE`, `UPDATER_ROLE`, `REVOKER_ROLE`).
+* **Immutability:** Overrides transfer functions to prevent tokens from being sold or moved, securing them to the original developer's wallet forever.
+
+### 2. ReferenceERC721 (Benchmarking Contract)
+
+**Functionality:** This is a naive reference implementation designed strictly for testing and gas comparison against `VeriSkillCredential`. **It is not used in production.**
+* **Purpose:** Acts as a baseline to empirically prove the minimum 30% gas reduction requirement targeted by the project.
+* **Mechanism:** It intentionally uses separate `mapping(uint256 => uint256)` data structures for every single variable (Layer, Status, IssuedAt, etc.). This mimics a standard, unoptimized smart contract, requiring 7 expensive cold-storage writes during minting, compared to VeriSkill's 4.
+
+## VeriSkillCredential Smart Contract Test Result (68 Passing)
+
+<img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/e0a71904-d573-430a-83ed-2d0949179146" />
+
+<img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/64e52242-425d-475f-b5ee-a25d8bae00dd" />
+
+<img width="958" height="504" alt="Image" src="https://github.com/user-attachments/assets/7fc96263-933a-4cca-9c3c-bc8af3c72244" />
+
+<img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/90404eaf-73ee-416d-969b-19625c7b083f" />
+
+<img width="959" height="502" alt="Image" src="https://github.com/user-attachments/assets/bb68df52-d6eb-481a-b0b6-f51f61a3665a" />
 
 ## Environment Setup and Installation
 
