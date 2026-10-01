@@ -204,7 +204,7 @@ VeriSkill utilizes two distinct smart contracts during its development and testi
 * **Cryptographic Commitments & Privacy**
 <img width="959" height="504" alt="Image" src="https://github.com/user-attachments/assets/524fa54e-89ae-4ce2-9231-867679fed50b" />
 
-* Access Control & Lifecycle Management
+* **Access Control & Lifecycle Management**
 <img width="959" height="504" alt="Image" src="https://github.com/user-attachments/assets/0aea3a74-fdca-4bc0-a44e-55de6710b8d7" />
 
 <img width="959" height="505" alt="Image" src="https://github.com/user-attachments/assets/0ff01600-fe0a-4dbc-bc60-81c354a7950e" />
