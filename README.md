@@ -193,20 +193,20 @@ VeriSkill utilizes two distinct smart contracts during its development and testi
 
 ## VeriSkillCredential Smart Contract Code Snippets 
 
-* Enforcing the Soulbound Standard
+* **Enforcing the Soulbound Standard**
 <img width="959" height="505" alt="Image" src="https://github.com/user-attachments/assets/a4cd9c83-3dc3-436f-847a-808f48bb1eeb" />
 
-* Low-Level Gas Optimization (The 30% Benchmark)
+* **Low-Level Gas Optimization (The 30% Benchmark)**
 <img width="959" height="283" alt="Image" src="https://github.com/user-attachments/assets/872e6d04-061a-4656-a873-892a39958e13" />
 
 <img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/e2dbf40b-f629-4a1c-a7b5-0df1399fd4a0" />
 
+* **Cryptographic Commitments & Privacy**
 <img width="959" height="504" alt="Image" src="https://github.com/user-attachments/assets/524fa54e-89ae-4ce2-9231-867679fed50b" />
 
-* Cryptographic Commitments & Privacy
+* Access Control & Lifecycle Management
 <img width="959" height="504" alt="Image" src="https://github.com/user-attachments/assets/0aea3a74-fdca-4bc0-a44e-55de6710b8d7" />
 
-* Access Control & Lifecycle Management
 <img width="959" height="505" alt="Image" src="https://github.com/user-attachments/assets/0ff01600-fe0a-4dbc-bc60-81c354a7950e" />
 
 ## VeriSkillCredential Smart Contract Test Result (68 Passing)
