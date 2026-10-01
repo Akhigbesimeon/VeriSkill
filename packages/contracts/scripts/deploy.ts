@@ -1,6 +1,7 @@
 import { ethers, network } from 'hardhat'
 import * as fs from 'fs'
 import * as path from 'path'
+import { VeriSkillCredential } from "../typechain-types";
 
 /**
  * Deploy VeriSkillCredential to the target network.
@@ -67,13 +68,17 @@ async function main() {
   const adminSigner = deployer // In local dev deployer === admin
   // In non-local deployments, the admin key is separate — role grants are done manually.
 
+  // Cast the connected contract to your specific TypeChain interface once
+  const adminContract = contract.connect(adminSigner) as VeriSkillCredential
+
   if (process.env.ISSUER_ADDRESS) {
-    await (await contract.connect(adminSigner).grantRole(ISSUER_ROLE, process.env.ISSUER_ADDRESS)).wait()
-    console.log(`ISSUER_ROLE granted to: ${process.env.ISSUER_ADDRESS}`)
-  }
-  if (process.env.UPDATER_ADDRESS) {
-    await (await contract.connect(adminSigner).grantRole(UPDATER_ROLE, process.env.UPDATER_ADDRESS)).wait()
-    console.log(`UPDATER_ROLE granted to: ${process.env.UPDATER_ADDRESS}`)
+  await (await adminContract.grantRole(ISSUER_ROLE, process.env.ISSUER_ADDRESS)).wait()
+  console.log(`ISSUER_ROLE granted to: ${process.env.ISSUER_ADDRESS}`)
+}
+
+if (process.env.UPDATER_ADDRESS) {
+  await (await adminContract.grantRole(UPDATER_ROLE, process.env.UPDATER_ADDRESS)).wait()
+  console.log(`UPDATER_ROLE granted to: ${process.env.UPDATER_ADDRESS}`)
   }
 
   // ── Write deployment record ───────────────────────────────────────────────

@@ -35,14 +35,23 @@ async function deployFixture() {
     await ethers.getSigners()
 
   const factory = await ethers.getContractFactory('VeriSkillCredential')
-  const contract = (await factory.deploy(admin.address)) as VeriSkillCredential
+  const contract = (await factory.deploy(admin.address)) as unknown as VeriSkillCredential
   await contract.waitForDeployment()
 
-  // Grant operational roles to designated accounts
-  await contract.connect(admin).grantRole(ISSUER_ROLE,  issuer.address)
-  await contract.connect(admin).grantRole(UPDATER_ROLE, updater.address)
+  // Create a typed connected instance for the admin
+  const adminContract = contract.connect(admin) as VeriSkillCredential
+  const issuerContract = contract.connect(issuer) as VeriSkillCredential
+  const updaterContract = contract.connect(updater) as VeriSkillCredential
 
-  return { contract, deployer, admin, issuer, updater, revoker, developer, other }
+  // Grant operational roles to designated accounts
+  await adminContract.grantRole(ISSUER_ROLE,  issuer.address)
+  await adminContract.grantRole(UPDATER_ROLE, updater.address)
+
+
+  return { 
+    contract, deployer, admin, issuer, updater, revoker, developer, other,
+    adminContract, issuerContract, updaterContract 
+  }
 }
 
 async function deployAndMintFixture() {
@@ -153,13 +162,13 @@ describe('VeriSkillCredential', () => {
 
   describe('mintCredential', () => {
     it('ISSUER_ROLE can mint a credential', async () => {
-      const { contract, issuer, developer } = await deployFixture()
+      const { issuerContract, developer } = await deployFixture()
       const skillId    = makeSkillId('Python')
       const layer      = 4
       const commitHash = makeCommitHash(developer.address, skillId, layer)
 
       await expect(
-        contract.connect(issuer).mintCredential(developer.address, skillId, commitHash, layer)
+        issuerContract.mintCredential(developer.address, skillId, commitHash, layer)
       ).to.not.be.reverted
     })
 
@@ -230,8 +239,8 @@ describe('VeriSkillCredential', () => {
       const { contract, developer, other } = await deployFixture()
       const skillId = makeSkillId('React')
       await expect(
-        contract.connect(other).mintCredential(developer.address, skillId, ethers.ZeroHash, 4)
-      ).to.be.revertedWithCustomError(contract, 'AccessControlUnauthorizedAccount')
+        (contract.connect(other) as VeriSkillCredential).mintCredential(developer.address, skillId, ethers.ZeroHash, 4)
+  ).to.be.revertedWithCustomError(contract, 'AccessControlUnauthorizedAccount')
     })
 
     it('reverts when layer is below MIN_LAYER_TO_MINT (layer 1)', async () => {
@@ -587,7 +596,7 @@ describe('VeriSkillCredential', () => {
 
       // ── Deploy and measure ReferenceERC721 ──────────────────────────────
       const refFactory = await ethers.getContractFactory('ReferenceERC721')
-      const refContract = (await refFactory.deploy()) as ReferenceERC721
+      const refContract = (await refFactory.deploy()) as unknown as ReferenceERC721
       await refContract.waitForDeployment()
 
       const refTx      = await refContract.mint(developer.address, skillId, commitHash, 4)
