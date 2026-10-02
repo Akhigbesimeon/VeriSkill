@@ -18,7 +18,7 @@ VeriSkill addresses these issues through a dual-platform system:
 
 * **Gas-Optimized Smart Contracts:** Utilizes Yul-optimized Assembly within the Ethereum Virtual Machine (EVM) to significantly reduce the gas costs of minting non-transferable Soulbound Tokens (SBTs).
 
-* **4-Layer Verification System:**
+* **Main 4-Layer Verification System:**
 
   1. *Evidence Submission:* Direct verification links (eliminates PDF forgery).
 
