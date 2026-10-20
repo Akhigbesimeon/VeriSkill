@@ -1,0 +1,17 @@
+{
+  "network": "sepolia",
+  "deployedAt": "2026-10-19T18:48:59.183Z",
+  "admin": "0x5CE9aA6601ba6B65BB99D2ff693d8450C94E2568",
+  "eas": "0xC2679fBD37d54388Ce493F1DB75320D236e1815e",
+  "schemaRegistry": "0x0a7E2Ff54e76B8E6659aedc9103FB21c038050D0",
+  "schemaUid": "0x315997d27b984cc288bf920f84283ccf826b97e76694c9db89efd78837265f19",
+  "resolver": "0x7ce347C0b4ac8Fd5074E334137858A999c4082B2",
+  "credential": "0xB3770Bb1E4b137c61D1ADA1EDfacD1625Fa3c991",
+  "compilerVersion": "0.8.24",
+  "evmVersion": "cancun",
+  "optimizer": {
+    "enabled": true,
+    "runs": 200,
+    "viaIR": true
+  }
+}
