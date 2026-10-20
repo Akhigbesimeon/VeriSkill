@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "VeriSkill",
+    "slug": "veriskill",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#4f46b8"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.veriskill.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "VeriSkill uses the camera to scan credential QR codes."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#4f46b8"
+      },
+      "package": "com.veriskill.app",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "VeriSkill uses the camera to scan credential QR codes."
+        }
+      ],
+      "expo-sharing"
+    ],
+    "scheme": "veriskill",
+    "extra": {
+      "apiUrl": "http://localhost:4000/api/v1"
+    }
+  }
+}
