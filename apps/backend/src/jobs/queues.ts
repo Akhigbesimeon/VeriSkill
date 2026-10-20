@@ -2,7 +2,6 @@ import Queue, { QueueOptions } from 'bull'
 import { env } from '../config/env'
 import { processEvidenceUrl } from '../services/url-verification.service'
 import { scanRepository } from '../services/github-scan.service'
-import { ApprovedSkill } from '../models/Credential'
 
 /** Bull options */
 const queueOptions: QueueOptions = {
@@ -24,7 +23,7 @@ export const githubScanQueue = new Queue<{
   credentialId: string
   owner: string
   repo: string
-  skill: ApprovedSkill
+  skill: Parameters<typeof scanRepository>[3]
 }>('github-scan', env.REDIS_URL, queueOptions)
 
 /** Workers */
