@@ -13,11 +13,20 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: '0.8.24',
+    // Bumped to 0.8.29 to match the EAS contracts package, which pins exactly
+    // 0.8.29 in its SchemaRegistry/EAS/EIP1271Verifier files. Our own sources
+    // use caret-floor pragmas (^0.8.24), so they stay compatible.
+    version: '0.8.29',
     settings: {
+      // runs=10000 captures ~80% of the gains available from the Yul
+      // optimizer's execution-cost tuning for this contract's mint hot
+      // path (see docs/GAS_OPTIMIZATION.md § Phase B). Going higher
+      // (1_000_000) saves only ~220 more gas per mint but noticeably
+      // inflates deployment cost. Lowering to the Hardhat default of 200
+      // costs ~900 extra gas per mint.
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 10000,
       },
       evmVersion: 'cancun',
       // viaIR enables the Yul intermediate representation pipeline.
@@ -42,11 +51,17 @@ const config: HardhatUserConfig = {
       url: 'http://127.0.0.1:8545',
       chainId: 31337,
     },
-    // Testnet — only configured after Phase 1 local tests pass
-    // testnet: {
-    //   url: process.env.RPC_URL || '',
-    //   accounts: process.env.ISSUER_PRIVATE_KEY ? [process.env.ISSUER_PRIVATE_KEY] : [],
-    // },
+    // Sepolia — target testnet for the hybrid ERC721 + EAS resolver deployment.
+    // EAS core addresses on Sepolia are consumed by scripts/deploy.ts via env.
+    // Accounts entry is only populated when ISSUER_PRIVATE_KEY looks like a real
+    // 32-byte hex key, so `hardhat compile` works with the .env placeholder.
+    sepolia: {
+      url: process.env.SEPOLIA_RPC_URL ?? '',
+      chainId: 11155111,
+      accounts: /^(0x)?[0-9a-fA-F]{64}$/.test(process.env.ISSUER_PRIVATE_KEY ?? '')
+        ? [process.env.ISSUER_PRIVATE_KEY as string]
+        : [],
+    },
   },
 
   gasReporter: {
