@@ -52,7 +52,7 @@ contract ReferenceERC721 is ERC721 {
 
         // 6 separate cold storage writes — no packing
         _layer[tokenId]      = layer;
-        _status[tokenId]     = 0; // active
+        _status[tokenId]     = 0;
         _issuedAt[tokenId]   = block.timestamp;
         _updatedAt[tokenId]  = block.timestamp;
         _skillId[tokenId]    = skillId;
