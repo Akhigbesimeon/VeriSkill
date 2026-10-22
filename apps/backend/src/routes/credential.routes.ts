@@ -75,6 +75,30 @@ credentialRouter.post('/:id/github', requireRole('developer'), async (req, res, 
   } catch (err) { next(err) }
 })
 
+/** DELETE /api/v1/credentials/:id/evidence/:evidenceId — remove an evidence URL */
+credentialRouter.delete('/:id/evidence/:evidenceId', requireRole('developer'), async (req, res, next) => {
+  try {
+    await CredentialService.deleteEvidence(req.params.id, req.user!.id, req.params.evidenceId)
+    res.status(204).end()
+  } catch (err) { next(err) }
+})
+
+/** DELETE /api/v1/credentials/:id/github/:scanId — remove a GitHub scan */
+credentialRouter.delete('/:id/github/:scanId', requireRole('developer'), async (req, res, next) => {
+  try {
+    await CredentialService.deleteGithubScan(req.params.id, req.user!.id, req.params.scanId)
+    res.status(204).end()
+  } catch (err) { next(err) }
+})
+
+/** DELETE /api/v1/credentials/:id — delete a credential draft (DRAFT or ACTIVE) */
+credentialRouter.delete('/:id', requireRole('developer'), async (req, res, next) => {
+  try {
+    await CredentialService.deleteCredential(req.params.id, req.user!.id)
+    res.status(204).end()
+  } catch (err) { next(err) }
+})
+
 /** POST /api/v1/credentials/:id/submit — submit for peer review */
 credentialRouter.post('/:id/submit', requireRole('developer'), async (req, res, next) => {
   try {
