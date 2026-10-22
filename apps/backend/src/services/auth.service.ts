@@ -1,9 +1,12 @@
+import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import { Op } from 'sequelize'
 import { env } from '../config/env'
 import { User, UserRole, WalletType } from '../models/User'
 import { ConflictError, UnauthorizedError, ValidationError } from '../middleware/error.middleware'
 import { JwtPayload } from '../middleware/auth.middleware'
+import { sendPasswordResetEmail } from './mailer.service'
 
 const SALT_ROUNDS = 12
 
@@ -177,6 +180,45 @@ export async function updateWallet(
   await user.save()
 
   return serializeUser(user)
+}
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000
+
+function hashResetToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+/** Always resolves — never leaks whether the email exists. */
+export async function requestPasswordReset(email: string) {
+  const user = await User.findOne({ where: { email: email.toLowerCase() } })
+  if (!user || !user.isActive) return
+
+  const token = crypto.randomBytes(32).toString('hex')
+  user.passwordResetTokenHash = hashResetToken(token)
+  user.passwordResetExpiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS)
+  await user.save()
+
+  const link = `${env.WEB_BASE_URL}/reset-password?token=${token}`
+  await sendPasswordResetEmail(user.email, link)
+}
+
+export async function resetPassword(token: string, newPassword: string) {
+  if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+    throw new ValidationError('New password must be 8+ characters with an uppercase letter and a number')
+  }
+
+  const user = await User.findOne({
+    where: {
+      passwordResetTokenHash: hashResetToken(token),
+      passwordResetExpiresAt: { [Op.gt]: new Date() },
+    },
+  })
+  if (!user || !user.isActive) throw new UnauthorizedError('Reset link is invalid or has expired')
+
+  user.passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS)
+  user.passwordResetTokenHash = null
+  user.passwordResetExpiresAt = null
+  await user.save()
 }
 
 export async function refreshTokens(refreshToken: string) {
