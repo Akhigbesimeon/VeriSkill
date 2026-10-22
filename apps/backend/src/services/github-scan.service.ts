@@ -170,6 +170,40 @@ function computeSkillMatch(
   return { matchType: 'none', matchScore: 0 }
 }
 
+/**
+ * Sync pre-submission check. Returns a rejection message, or null to accept.
+ * Fail-closed on GitHub errors so a mismatched repo can never slip through.
+ */
+export async function preflightSkillMatch(
+  owner: string,
+  repo: string,
+  skill: ApprovedSkill
+): Promise<string | null> {
+  let data: RepoGraph
+  try {
+    const client = await gh()
+    data = await client<RepoGraph>(REPO_QUERY, { owner, repo })
+  } catch {
+    return 'Could not reach GitHub to verify the repository. Please try again.'
+  }
+  const r = data.repository
+  if (!r) return 'Repository not found or not public on GitHub.'
+
+  const totalBytes = r.languages?.totalSize ?? 0
+  const languages: Record<string, number> = {}
+  for (const edge of r.languages?.edges ?? []) {
+    languages[edge.node.name] = totalBytes > 0
+      ? Math.round((edge.size / totalBytes) * 100 * 10) / 10
+      : 0
+  }
+
+  const { matchType } = computeSkillMatch(skill, languages)
+  if (matchType === 'none') {
+    return `Repository language does not match the selected skill (${skill}).`
+  }
+  return null
+}
+
 export async function scanRepository(
   githubScanId: string,
   owner: string,
