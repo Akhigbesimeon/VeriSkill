@@ -7,6 +7,7 @@ import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/er
 import { urlVerificationQueue, githubScanQueue } from '../jobs/queues'
 import { calculateTrustScore } from './trust-score.service'
 import { assignPeerReviewers } from './peer-review.service'
+import { preflightSkillMatch } from './github-scan.service'
 
 export async function createCredential(developerId: string, skill: ApprovedSkill) {
   return Credential.create({
@@ -101,6 +102,9 @@ export async function submitGithubRepo(
   if (!match) throw new ValidationError('Invalid GitHub repository URL')
   const [, owner, repoName] = match
 
+  const rejection = await preflightSkillMatch(owner, repoName, credential.skill)
+  if (rejection) throw new ValidationError(rejection)
+
   const scan = await GithubScan.create({
     credentialId,
     repoUrl,
@@ -119,6 +123,46 @@ export async function submitGithubRepo(
   })
 
   return { scan, message: 'Repository submitted — scan in progress' }
+}
+
+async function loadDeletableCredential(credentialId: string, developerId: string) {
+  const credential = await Credential.findOne({ where: { id: credentialId, developerId } })
+  if (!credential) throw new NotFoundError('Credential not found')
+  if (!['DRAFT', 'ACTIVE'].includes(credential.lifecycleStatus)) {
+    throw new ValidationError(
+      `Cannot remove items from a ${credential.lifecycleStatus} credential`
+    )
+  }
+  return credential
+}
+
+export async function deleteEvidence(
+  credentialId: string,
+  developerId: string,
+  evidenceUrlId: string
+) {
+  await loadDeletableCredential(credentialId, developerId)
+  const row = await EvidenceUrl.findOne({ where: { id: evidenceUrlId, credentialId } })
+  if (!row) throw new NotFoundError('Evidence URL not found')
+  await row.destroy()
+  await calculateTrustScore(credentialId)
+}
+
+export async function deleteGithubScan(
+  credentialId: string,
+  developerId: string,
+  scanId: string
+) {
+  await loadDeletableCredential(credentialId, developerId)
+  const row = await GithubScan.findOne({ where: { id: scanId, credentialId } })
+  if (!row) throw new NotFoundError('GitHub scan not found')
+  await row.destroy()
+  await calculateTrustScore(credentialId)
+}
+
+export async function deleteCredential(credentialId: string, developerId: string) {
+  const credential = await loadDeletableCredential(credentialId, developerId)
+  await credential.destroy()
 }
 
 export async function submitForReview(credentialId: string, developerId: string) {
