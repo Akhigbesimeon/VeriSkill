@@ -51,6 +51,15 @@ const changePasswordSchema = z.object({
   newPassword:     z.string().min(8).max(200),
 })
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+})
+
+const resetPasswordSchema = z.object({
+  token:       z.string().min(1),
+  newPassword: z.string().min(8).max(200),
+})
+
 const isMobile = (req: Request) =>
   !!env.MOBILE_API_KEY && req.get('x-mobile-key') === env.MOBILE_API_KEY
 
@@ -60,6 +69,9 @@ authRouter.post('/register', authLimiter, async (req: Request, res: Response, ne
     const input = validate(registerSchema, req.body)
     if (isMobile(req) && input.role !== 'recruiter') {
       throw new ForbiddenError('The mobile app is for recruiters only')
+    }
+    if (!isMobile(req) && input.role !== 'developer') {
+      throw new ForbiddenError('Web self-registration is for developers only')
     }
     const result = await AuthService.register(input)
     res.status(201).json(result)
@@ -75,6 +87,24 @@ authRouter.post('/login', authLimiter, async (req: Request, res: Response, next:
       throw new ForbiddenError('The mobile app is for recruiters only')
     }
     res.json(result)
+  } catch (err) { next(err) }
+})
+
+/** POST /api/v1/auth/forgot-password — always returns ok to avoid user enumeration. */
+authRouter.post('/forgot-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { email } = validate(forgotPasswordSchema, req.body)
+    await AuthService.requestPasswordReset(email)
+    res.json({ ok: true })
+  } catch (err) { next(err) }
+})
+
+/** POST /api/v1/auth/reset-password */
+authRouter.post('/reset-password', authLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token, newPassword } = validate(resetPasswordSchema, req.body)
+    await AuthService.resetPassword(token, newPassword)
+    res.json({ ok: true })
   } catch (err) { next(err) }
 })
 
