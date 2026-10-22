@@ -78,6 +78,11 @@ const envSchema = z.object({
   URL_FETCH_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   URL_FETCH_MAX_RESPONSE_BYTES: z.coerce.number().int().positive().default(2_097_152),
   URL_FETCH_MAX_REDIRECTS: z.coerce.number().int().min(0).max(10).default(3),
+
+  // Email (Resend). If RESEND_API_KEY is unset, mailer logs links to stdout
+  // instead of sending — handy for local dev.
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().default('VeriSkill <onboarding@resend.dev>'),
 })
 
 function validateEnv() {
