@@ -25,6 +25,8 @@ export interface UserAttributes {
   walletType: WalletType
   walletAddress: string | null     // null for managed wallets until key is generated
   isActive: boolean
+  passwordResetTokenHash: string | null
+  passwordResetExpiresAt: Date | null
   createdAt?: Date
   updatedAt?: Date
 }
@@ -32,6 +34,7 @@ export interface UserAttributes {
 type UserCreationAttributes = Optional<
   UserAttributes,
   'id' | 'bio' | 'location' | 'externalLinks' | 'company' | 'walletAddress' | 'isActive'
+  | 'passwordResetTokenHash' | 'passwordResetExpiresAt'
 >
 
 // ─── Model ────────────────────────────────────────────────────────────────────
@@ -50,6 +53,8 @@ export class User extends Model<UserAttributes, UserCreationAttributes>
   declare walletType: WalletType
   declare walletAddress: string | null
   declare isActive: boolean
+  declare passwordResetTokenHash: string | null
+  declare passwordResetExpiresAt: Date | null
   declare createdAt: Date
   declare updatedAt: Date
 }
@@ -117,6 +122,16 @@ User.init(
       defaultValue: true,
       field: 'is_active',
     },
+    passwordResetTokenHash: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+      field: 'password_reset_token_hash',
+    },
+    passwordResetExpiresAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      field: 'password_reset_expires_at',
+    },
   },
   {
     sequelize,
@@ -126,6 +141,7 @@ User.init(
       { fields: ['email'], unique: true },
       { fields: ['role'] },
       { fields: ['wallet_address'] },
+      { fields: ['password_reset_token_hash'] },
     ],
   }
 )
