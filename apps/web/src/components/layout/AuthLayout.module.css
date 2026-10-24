@@ -1,0 +1,107 @@
+.page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100dvh;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-12);
+  max-width: 480px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-bottom: var(--space-10);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+.aside {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 50% at 20% 20%, rgba(79, 70, 184, 0.35), transparent 60%),
+    radial-gradient(70% 60% at 90% 90%, rgba(31, 27, 85, 0.6), transparent 60%),
+    linear-gradient(140deg, #1a1830 0%, #2a2550 55%, #141225 100%);
+  color: var(--color-text-inverse);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-12);
+}
+
+.aside::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(70% 60% at 50% 50%, #000 55%, transparent 100%);
+  pointer-events: none;
+}
+
+.asideHeader {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 11px;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+}
+.asideHeader::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: rgba(255,255,255,0.4);
+}
+
+.quote {
+  position: relative;
+  max-width: 460px;
+  font-family: var(--font-sans);
+  font-size: 1.9rem;
+  font-weight: var(--font-weight-medium);
+  color: #ffffff;
+  line-height: 1.25;
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+}
+.quote em {
+  font-style: normal;
+  color: #c9c3f4;
+}
+
+.asideFooter {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  color: rgba(255,255,255,0.72);
+}
+.asideFooterLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: rgba(255,255,255,0.5);
+}
+
+@media (max-width: 900px) {
+  .page { grid-template-columns: 1fr; }
+  .aside { display: none; }
+  .panel { padding: var(--space-10) var(--space-6) var(--space-8); max-width: 440px; }
+  .brand { margin-bottom: var(--space-8); }
+}
