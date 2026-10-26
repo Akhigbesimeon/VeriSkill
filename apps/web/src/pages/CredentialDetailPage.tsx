@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import QRCode from 'qrcode'
-import { Plus, Send, CheckCircle2, XCircle, Clock, AlertTriangle, ShieldCheck, ChevronDown, Trash2 } from 'lucide-react'
+import { Plus, Send, CheckCircle2, XCircle, Clock, AlertTriangle, ShieldCheck, ChevronDown, Trash2, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
@@ -71,16 +71,38 @@ function urlStatusIcon(s: string) {
   return <AlertTriangle size={14} color="var(--color-warning)" aria-label={s} />
 }
 
+// Renders nothing if VITE_EXPLORER_URL or VITE_CONTRACT_ADDRESS are not set,
+// which is the correct behaviour locally where the chain is a dev anvil node.
+function ExplorerLink({ tokenId }: { tokenId: string }) {
+  const explorer = import.meta.env.VITE_EXPLORER_URL as string | undefined
+  const contract = import.meta.env.VITE_CONTRACT_ADDRESS as string | undefined
+  if (!explorer || !contract) return null
+  const href = `${explorer.replace(/\/$/, '')}/token/${contract}?a=${tokenId}`
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={styles.explorerLink}
+    >
+      View on-chain <ExternalLink size={12} aria-hidden />
+    </a>
+  )
+}
+
 function QrShare({ credentialId }: { credentialId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [error, setError] = useState<string | null>(null)
-  const payload = `veriskill://verify/${credentialId}`
+  // QR stays on the mobile deep-link scheme so the native app handles the scan.
+  const qrPayload = `veriskill://verify/${credentialId}`
+  const verifyBase = (import.meta.env.VITE_PUBLIC_VERIFY_BASE_URL as string | undefined) || window.location.origin
+  const webUrl = `${verifyBase.replace(/\/$/, '')}/verify/${credentialId}`
 
   useEffect(() => {
     if (!canvasRef.current) return
-    QRCode.toCanvas(canvasRef.current, payload, { width: 192, margin: 1 })
+    QRCode.toCanvas(canvasRef.current, qrPayload, { width: 192, margin: 1 })
       .catch(() => setError('Could not render QR code.'))
-  }, [payload])
+  }, [qrPayload])
 
   return (
     <div className={styles.qrShare}>
@@ -90,7 +112,10 @@ function QrShare({ credentialId }: { credentialId: string }) {
           Recruiters scan this with the VeriSkill mobile app to verify this credential
           on the chain. The QR carries only the credential ID — no personal data.
         </p>
-        <div className={styles.qrShareUrl}>{payload}</div>
+        <p>Or share this link to let anyone verify it in a browser:</p>
+        <a href={webUrl} target="_blank" rel="noopener noreferrer" className={styles.qrShareUrl}>
+          {webUrl}
+        </a>
         {error && <span className={styles.qrError}>{error}</span>}
       </div>
     </div>
@@ -322,6 +347,7 @@ export function CredentialDetailPage() {
             <Badge variant={statusVariant(credential.lifecycleStatus)}>{credential.lifecycleStatus.replace(/_/g, ' ')}</Badge>
             <Badge variant="default">Layer {credential.verificationLayer}</Badge>
             {credential.tokenId && <Badge variant="success">On-chain #{credential.tokenId}</Badge>}
+            {credential.tokenId && <ExplorerLink tokenId={credential.tokenId} />}
           </div>
         </div>
         {canMint && (
