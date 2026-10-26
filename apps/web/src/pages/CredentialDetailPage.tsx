@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/Input'
-import api from '@/lib/api'
+import api from ''
 import { statusVariant } from '@/lib/credentials'
 import styles from './CredentialDetailPage.module.css'
 
