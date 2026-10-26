@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: veriskill-backend
+    runtime: node
+    region: frankfurt            
+    plan: free
+    rootDir: .                  
+    buildCommand: npm install && npm run build --workspace=apps/backend
+    startCommand: npm run start --workspace=apps/backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000  
