@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import VeriSkillCredentialABI from '../../../../packages/shared/src/abi/VeriSkillCredential.json'
+import VeriSkillCredentialABI from '@veriskill/shared/src/abi/VeriSkillCredential.json'
 import { env } from '../config/env'
 import { Credential } from '../models/Credential'
 import { AuditLog } from '../models/AuditLog'
