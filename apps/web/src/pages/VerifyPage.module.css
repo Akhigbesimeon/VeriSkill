@@ -1,0 +1,62 @@
+.page { display: flex; flex-direction: column; gap: var(--space-8); max-width: var(--content-max-width); }
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: var(--space-6);
+  border-bottom: 1px solid var(--color-border);
+}
+.eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+}
+.title {
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--line-height-tight);
+}
+.sub { color: var(--color-text-secondary); font-size: var(--font-size-base); max-width: 60ch; }
+
+.error { color: var(--color-danger); font-size: var(--font-size-sm); font-weight: var(--font-weight-medium); }
+.loading { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+
+.empty {
+  padding: var(--space-16) var(--space-8);
+  text-align: center;
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+}
+.emptyTitle { font-size: var(--font-size-lg); font-weight: var(--font-weight-semibold); margin-bottom: var(--space-2); letter-spacing: var(--tracking-snug); }
+.emptyHint { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+
+.tableWrapper { composes: tableWrapper from '../styles/tables.module.css'; }
+.table        { composes: table from '../styles/tables.module.css'; }
+
+.devCell { display: flex; flex-direction: column; gap: 2px; }
+.devName { font-weight: var(--font-weight-semibold); color: var(--color-text-primary); letter-spacing: var(--tracking-snug); }
+.devLocation { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.skillCell { font-weight: var(--font-weight-semibold); color: var(--color-text-primary); letter-spacing: var(--tracking-snug); }
+.score { font-weight: var(--font-weight-semibold); font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: var(--font-size-base); }
+.dateCell { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.tokenCell { }
+.token {
+  font-size: var(--font-size-xs);
+  background: var(--color-bg-tint);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.legendCard { max-width: 560px; }
+.legendTitle { font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-snug); }
+.legendGrid { display: flex; flex-direction: column; gap: var(--space-3); }
+.legendRow { display: flex; align-items: center; gap: var(--space-3); }
+.legendLabel { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
