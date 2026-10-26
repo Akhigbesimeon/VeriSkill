@@ -95,7 +95,7 @@ function QrShare({ credentialId }: { credentialId: string }) {
   const [error, setError] = useState<string | null>(null)
   // QR stays on the mobile deep-link scheme so the native app handles the scan.
   const qrPayload = `veriskill://verify/${credentialId}`
-  const verifyBase = (import.meta.env.VITE_PUBLIC_VERIFY_BASE_URL as string | undefined) || window.location.origin
+  const verifyBase = (import.meta.env.VITE_VERIFY_BASE_URL as string | undefined) || window.location.origin
   const webUrl = `${verifyBase.replace(/\/$/, '')}/verify/${credentialId}`
 
   useEffect(() => {
