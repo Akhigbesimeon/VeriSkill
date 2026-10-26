@@ -5,6 +5,7 @@
   "framework": "vite",
   "installCommand": "npm install --prefix ../..",
   "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://veriskill-backend.onrender.com/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
