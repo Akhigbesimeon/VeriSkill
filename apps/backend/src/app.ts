@@ -41,24 +41,24 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 // ─── Request logger ──────────────────────────────────────────────────────────
 app.use(requestLogger)
 
-// ─── Global rate limiter ──────────────────────────────────────────────────────
-// Tighter per-route limits are applied in auth routes (login/register)
-app.use(rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX_REQUESTS,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests — try again later.' },
-}))
-
 // ─── Health check ─────────────────────────────────────────────────────────────
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
-    version: process.env.npm_package_version ?? '0.1.0',
-    timestamp: new Date().toISOString(),
+  app.get('/health', (_req: Request, res: Response) => {
+    res.json({
+      status: 'ok',
+      version: process.env.npm_package_version ?? '0.1.0',
+      timestamp: new Date().toISOString(),
+    })
   })
-})
+
+  // ─── Global rate limiter ──────────────────────────────────────────────────────
+  // Tighter per-route limits are applied in auth routes (login/register)
+  app.use(rateLimit({
+    windowMs: env.RATE_LIMIT_WINDOW_MS,
+    max: env.RATE_LIMIT_MAX_REQUESTS,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests — try again later.' },
+  }))
 
 // ─── API routes ───────────────────────────────────────────────────────────────
 app.use('/api/v1/auth',         authRouter)
