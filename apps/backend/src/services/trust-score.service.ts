@@ -27,7 +27,7 @@ interface SubScores {
   urlEvidence: number         // Layer 2 contribution: 0–20
   githubScan: number          // Layer 3 contribution: 0–20
   peerReview: number          // Layer 4/5 contribution: 0–30
-  expertReview: number        // Layer 6 contribution: 0–10
+  expertReview: number        // Layer 6 contribution: 0–25
 }
 
 interface TrustScoreResult {
@@ -94,8 +94,8 @@ export async function calculateTrustScore(credentialId: string): Promise<TrustSc
     .sort((a, b) => (b.confidenceRating ?? 0) - (a.confidenceRating ?? 0))[0]
 
   if (bestExpert?.confidenceRating) {
-    // confidenceRating → points: 1→0, 2→2, 3→5, 4→7, 5→10.
-    const confidenceScoreMap: Record<number, number> = { 1: 0, 2: 2, 3: 5, 4: 7, 5: 10 }
+    // confidenceRating → points: 1→0, 2→5, 3→12, 4→18, 5→25.
+    const confidenceScoreMap: Record<number, number> = { 1: 0, 2: 5, 3: 12, 4: 18, 5: 25 }
     breakdown.expertReview = confidenceScoreMap[bestExpert.confidenceRating] ?? 0
   }
 
