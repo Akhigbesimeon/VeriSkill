@@ -51,6 +51,7 @@ const envSchema = z.object({
   RPC_URL: z.string().url().default('http://127.0.0.1:8545'),
   CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Must be a valid EVM address'),
   ISSUER_PRIVATE_KEY: z.string().min(1, 'ISSUER_PRIVATE_KEY is required'),
+  ISSUER_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Must be a valid EVM address'),
   ADMIN_PRIVATE_KEY: z.string().optional(),
 
   // EAS — Ethereum Attestation Service (Sepolia defaults; override per network)
