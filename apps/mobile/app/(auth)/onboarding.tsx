@@ -25,20 +25,38 @@ const SLIDES: Slide[] = [
   {
     eyebrow: 'Layer 01 · Self-attestation',
     title: 'Declare the skill you can perform.',
-    body: 'Timestamped and signed to your wallet — the foundation every verification layer builds on.',
+    body: 'Timestamped and signed to your wallet — the base every later layer builds on.',
     card: { status: 'Draft', skill: 'TypeScript', verifiers: 'Self-attested', score: null },
   },
   {
-    eyebrow: 'Layer 02 · Peer verification',
-    title: 'People who watched you work vouch for the claim.',
-    body: 'Reviews are weighted by each peer’s own verified standing — so the signal tightens with the signatures.',
-    card: { status: 'In review', skill: 'React · Production', verifiers: '3 peer signatures', score: 68 },
+    eyebrow: 'Layer 02 · URL verified',
+    title: 'Evidence links check out.',
+    body: 'Your provider URLs are reachable and from a recognised source. Re-checked monthly, automatic.',
+    card: { status: 'URL verified', skill: 'Rust · OSS', verifiers: '2 provider links', score: 28 },
   },
   {
-    eyebrow: 'Layer 03 · Expert review',
+    eyebrow: 'Layer 03 · GitHub scanned',
+    title: 'The repo backs the claim.',
+    body: 'We read recency, activity, CI, and how well the project matches the skill you’re declaring.',
+    card: { status: 'Scanned', skill: 'Go · Services', verifiers: 'GitHub health 24 / 30', score: 48 },
+  },
+  {
+    eyebrow: 'Layer 04 · Peer verified',
+    title: 'A peer who’s seen the work signs it.',
+    body: 'One weighted peer approval is enough to make the credential mintable on-chain.',
+    card: { status: 'Peer signed', skill: 'React · Production', verifiers: '1 peer signature', score: 68 },
+  },
+  {
+    eyebrow: 'Layer 05 · Community verified',
+    title: 'The community converges.',
+    body: 'Three or more weighted peers agree. Expert review is auto-queued once you cross this line.',
+    card: { status: 'Community', skill: 'Kubernetes', verifiers: '3 peer signatures', score: 86 },
+  },
+  {
+    eyebrow: 'Layer 06 · Expert verified',
     title: 'A tamper-evident receipt, minted on-chain.',
-    body: 'A domain expert audits the evidence. On approval, your credential becomes a signed record you can carry anywhere.',
-    card: { status: 'Minted', skill: 'Distributed Systems', verifiers: '4 expert signatures', score: 92, ink: true },
+    body: 'A domain expert audits the evidence and signs. Your credential becomes a record you can carry anywhere.',
+    card: { status: 'Minted', skill: 'Distributed Systems', verifiers: 'Expert signed', score: 96, ink: true },
   },
 ]
 
