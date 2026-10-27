@@ -10,6 +10,12 @@ import { sendPasswordResetEmail } from './mailer.service'
 
 const SALT_ROUNDS = 12
 
+function assertNotIssuerWallet(address: string | null | undefined) {
+  if (address && address.toLowerCase() === env.ISSUER_ADDRESS.toLowerCase()) {
+    throw new ValidationError('Cannot use the issuer wallet as your personal wallet')
+  }
+}
+
 function signToken(user: User, kind: 'access' | 'refresh'): string {
   const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role, type: kind }
   const secret  = kind === 'access' ? env.JWT_SECRET         : env.JWT_REFRESH_SECRET
@@ -34,6 +40,7 @@ export async function register(input: RegisterInput) {
   if (input.walletType === 'self_custody' && !/^0x[a-fA-F0-9]{40}$/.test(input.walletAddress ?? '')) {
     throw new ValidationError('A valid EVM wallet address is required for self-custody wallets')
   }
+  assertNotIssuerWallet(input.walletAddress)
 
   const existing = await User.findOne({ where: { email: input.email.toLowerCase() } })
   if (existing) throw new ConflictError('An account with this email already exists')
@@ -171,6 +178,7 @@ export async function updateWallet(
   if (walletType === 'self_custody' && !/^0x[a-fA-F0-9]{40}$/.test(walletAddress ?? '')) {
     throw new ValidationError('A valid EVM wallet address is required for self-custody wallets')
   }
+  assertNotIssuerWallet(walletAddress)
 
   const user = await User.findByPk(userId)
   if (!user || !user.isActive) throw new UnauthorizedError('Account not found or inactive')
