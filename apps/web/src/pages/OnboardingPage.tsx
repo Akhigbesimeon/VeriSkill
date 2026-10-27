@@ -1,25 +1,43 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, ShieldCheck, Users, Award, Scan, Fingerprint, BadgeCheck } from 'lucide-react'
+import { ArrowRight, ShieldCheck, Users, Award, Scan, Fingerprint, BadgeCheck, Link2, Github, UsersRound } from 'lucide-react'
 import styles from './OnboardingPage.module.css'
 
 const LAYERS = [
   {
     num: '01',
     title: 'Self-attestation',
-    body: 'Declare the skill you can perform. Timestamped, signed to your wallet, and open for the next layers to build on.',
+    body: 'Declare the skill you can perform. Timestamped and signed to your wallet — the base every later layer builds on.',
     icon: <Fingerprint size={18} strokeWidth={1.75} />,
   },
   {
     num: '02',
-    title: 'Peer verification',
-    body: 'People who have watched you work vouch for the claim. Reviews are weighted by their own verified standing.',
-    icon: <Users size={18} strokeWidth={1.75} />,
+    title: 'URL verified',
+    body: 'Links to the work you’re claiming are reachable and come from a recognised provider. Automatic, re-checked monthly.',
+    icon: <Link2 size={18} strokeWidth={1.75} />,
   },
   {
     num: '03',
-    title: 'Expert review',
-    body: 'A domain expert audits the evidence. On approval, the credential is minted on-chain as a tamper-evident receipt.',
+    title: 'GitHub scanned',
+    body: 'We read the repo — recency, activity, CI, and how well it matches the skill you’re claiming.',
+    icon: <Github size={18} strokeWidth={1.75} />,
+  },
+  {
+    num: '04',
+    title: 'Peer verified',
+    body: 'A peer who has watched you work signs the claim. The credential becomes mintable on-chain at this layer.',
+    icon: <Users size={18} strokeWidth={1.75} />,
+  },
+  {
+    num: '05',
+    title: 'Community verified',
+    body: 'Three or more weighted peers converge on the same claim. Expert review is auto-queued once you cross this line.',
+    icon: <UsersRound size={18} strokeWidth={1.75} />,
+  },
+  {
+    num: '06',
+    title: 'Expert verified',
+    body: 'A domain expert audits the evidence and signs. The on-chain receipt is finalized — tamper-evident, portable, yours.',
     icon: <ShieldCheck size={18} strokeWidth={1.75} />,
   },
 ]
@@ -148,10 +166,11 @@ export function OnboardingPage() {
           <header className={styles.sectionHead}>
             <span className={styles.sectionEyebrow}>How it works</span>
             <h2 id="layers-heading" className={styles.sectionTitle}>
-              Three layers of trust, stacked on evidence.
+              Six layers of trust, stacked on evidence.
             </h2>
             <p className={styles.sectionLede}>
-              Each layer tightens the signal. You keep moving up as the people around you sign what they&rsquo;ve seen.
+              Each layer tightens the signal — from your own declaration to a signed expert audit. You move up as the evidence
+              and the people around you accumulate.
             </p>
           </header>
 
