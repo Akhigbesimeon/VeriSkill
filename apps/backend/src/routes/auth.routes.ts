@@ -10,7 +10,7 @@ export const authRouter = Router()
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: 50,
   message: { error: 'Too many attempts — wait 15 minutes.' },
 })
 
