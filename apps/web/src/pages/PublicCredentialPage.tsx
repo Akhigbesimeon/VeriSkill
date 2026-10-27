@@ -1,10 +1,10 @@
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
-import styles from './CredentialDetailPage.module.css'
+import styles from './PublicCredentialPage.module.css'
 
 interface PublicCredential {
   id: string
@@ -26,6 +26,17 @@ function explorerHref(tokenId: string): string | null {
   return `${explorer.replace(/\/$/, '')}/token/${contract}?a=${tokenId}`
 }
 
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <main id="main-content" className={styles.frame}>
+      <div className={styles.container}>
+        <Link to="/" className={styles.brand}>VeriSkill</Link>
+        {children}
+      </div>
+    </main>
+  )
+}
+
 export function PublicCredentialPage() {
   const { id } = useParams<{ id: string }>()
   // Plain axios — this page is intentionally public, so no auth header /
@@ -40,15 +51,19 @@ export function PublicCredentialPage() {
     retry: false,
   })
 
-  if (isLoading) return <p className={styles.loading}>Loading credential…</p>
+  if (isLoading) return <Frame><p className={styles.loading}>Loading credential…</p></Frame>
   if (isError || !data) {
-    return <p className={styles.error} role="alert">Credential not found or not yet verified.</p>
+    return (
+      <Frame>
+        <p className={styles.error} role="alert">Credential not found or not yet verified.</p>
+      </Frame>
+    )
   }
 
   const href = data.tokenId ? explorerHref(data.tokenId) : null
 
   return (
-    <div className={styles.page}>
+    <Frame>
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>{data.skill}</h1>
@@ -70,7 +85,7 @@ export function PublicCredentialPage() {
       <Card>
         <CardHeader><span className={styles.sectionTitle}>Credential</span></CardHeader>
         <CardBody>
-          <dl className={styles.publicGrid}>
+          <dl className={styles.grid}>
             {data.developer.displayName && (
               <>
                 <dt>Issued to</dt>
@@ -94,6 +109,6 @@ export function PublicCredentialPage() {
           </dl>
         </CardBody>
       </Card>
-    </div>
+    </Frame>
   )
 }
