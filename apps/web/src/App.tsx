@@ -16,6 +16,7 @@ const CredentialDetailPage = lazy(() => import('@/pages/CredentialDetailPage').t
 const ReviewsPage        = lazy(() => import('@/pages/ReviewsPage').then(m => ({ default: m.ReviewsPage })))
 const PastReviewsPage    = lazy(() => import('@/pages/PastReviewsPage').then(m => ({ default: m.PastReviewsPage })))
 const VerifyPage         = lazy(() => import('@/pages/VerifyPage').then(m => ({ default: m.VerifyPage })))
+const PublicCredentialPage = lazy(() => import('@/pages/PublicCredentialPage').then(m => ({ default: m.PublicCredentialPage })))
 const AdminAnalyticsPage   = lazy(() => import('@/pages/admin.pages').then(m => ({ default: m.AdminAnalyticsPage })))
 const AdminCredentialsPage = lazy(() => import('@/pages/admin.pages').then(m => ({ default: m.AdminCredentialsPage })))
 const AdminUsersPage       = lazy(() => import('@/pages/admin.pages').then(m => ({ default: m.AdminUsersPage })))
@@ -111,6 +112,7 @@ export function App() {
         <Route path="/recruiters"       element={<RecruitersPage />} />
         <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
         <Route path="/reset-password"   element={<ResetPasswordPage />} />
+        <Route path="/verify/:id"       element={<PublicCredentialPage />} />
 
         <Route
           path="/dashboard"
