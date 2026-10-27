@@ -16,6 +16,9 @@ import { verifyRouter } from './routes/verify.routes'
 
 const app = express()
 
+// Trust Render's load balancer so req.ip is the real client IP
+app.set('trust proxy', 1)
+
 // ─── Security headers ─────────────────────────────────────────────────────────
 app.use(helmet())
 
