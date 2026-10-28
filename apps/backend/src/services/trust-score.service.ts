@@ -36,7 +36,10 @@ interface TrustScoreResult {
   breakdown: SubScores
 }
 
-export async function calculateTrustScore(credentialId: string): Promise<TrustScoreResult> {
+export async function calculateTrustScore(
+  credentialId: string,
+  triggerEvent: string = 'recalculation',
+): Promise<TrustScoreResult> {
   const breakdown: SubScores = {
     selfDeclaration: 5,
     urlEvidence: 0,
@@ -139,7 +142,7 @@ export async function calculateTrustScore(credentialId: string): Promise<TrustSc
           newScore: score,
           oldLayer,
           newLayer: layer,
-          triggerEvent: 'recalculation',
+          triggerEvent,
           scoreBreakdown: breakdown as unknown as Record<string, unknown>,
         }, { transaction: tx })
       })
