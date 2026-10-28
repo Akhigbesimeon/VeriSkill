@@ -4,6 +4,7 @@ import { authenticate, requireRole } from '../middleware/auth.middleware'
 import { validate } from '../middleware/error.middleware'
 import * as CredentialService from '../services/credential.service'
 import { ApprovedSkill } from '../models/Credential'
+import { TrustScoreHistory } from '../models/TrustScoreHistory'
 import { mintCredential } from '../services/blockchain.service'
 
 export const credentialRouter = Router()
@@ -52,6 +53,19 @@ credentialRouter.get('/:id', async (req, res, next) => {
   try {
     const credential = await CredentialService.getCredential(req.params.id, req.user!)
     res.json(credential)
+  } catch (err) { next(err) }
+})
+
+/** GET /api/v1/credentials/:id/trust-score/history — append-only timeline of score changes */
+credentialRouter.get('/:id/trust-score/history', async (req, res, next) => {
+  try {
+    // Reuse the ownership/role check — throws 403/404 if the caller can't see this credential.
+    await CredentialService.getCredential(req.params.id, req.user!)
+    const history = await TrustScoreHistory.findAll({
+      where: { credentialId: req.params.id },
+      order: [['createdAt', 'ASC']],
+    })
+    res.json(history)
   } catch (err) { next(err) }
 })
 
