@@ -38,11 +38,11 @@ const TRIGGER_LABELS: Record<string, string> = {
 }
 
 const BREAKDOWN_LABELS: Record<string, string> = {
-  selfDeclaration: 'Self',
-  urlEvidence:     'URL',
-  githubScan:      'GitHub',
-  peerReview:      'Peer',
-  expertReview:    'Expert',
+  selfDeclaration: 'What you claimed',
+  urlEvidence:     'Links you provided',
+  githubScan:      'Your code we checked',
+  peerReview:      'Other devs agreed',
+  expertReview:    'An expert confirmed',
 }
 
 function labelFor(trigger: string): string {
@@ -88,6 +88,7 @@ export function TrustScoreHistoryPage() {
         <h1 className={styles.title}>Trust score history</h1>
         <p className={styles.sub}>
           Every event that moved this credential's trust score or verification layer, oldest first.
+          Each number below is points out of 100.
         </p>
       </header>
 
@@ -135,8 +136,10 @@ function TimelineRow({ entry }: { entry: HistoryEntry }) {
 
         <div className={styles.rowMeta}>
           <DeltaBadge direction={direction} delta={delta} oldScore={oldScore} newScore={newScore} />
-          {entry.oldLayer !== entry.newLayer && (
+          {entry.oldLayer !== entry.newLayer ? (
             <Badge variant="info">Layer {entry.oldLayer} → {entry.newLayer}</Badge>
+          ) : (
+            <Badge variant="default">Layer {entry.newLayer}</Badge>
           )}
         </div>
 
