@@ -13,6 +13,7 @@ const DashboardPage      = lazy(() => import('@/pages/DashboardPage').then(m => 
 const CredentialsPage    = lazy(() => import('@/pages/CredentialsPage').then(m => ({ default: m.CredentialsPage })))
 const NewCredentialPage  = lazy(() => import('@/pages/NewCredentialPage').then(m => ({ default: m.NewCredentialPage })))
 const CredentialDetailPage = lazy(() => import('@/pages/CredentialDetailPage').then(m => ({ default: m.CredentialDetailPage })))
+const TrustScoreHistoryPage = lazy(() => import('@/pages/TrustScoreHistoryPage').then(m => ({ default: m.TrustScoreHistoryPage })))
 const ReviewsPage        = lazy(() => import('@/pages/ReviewsPage').then(m => ({ default: m.ReviewsPage })))
 const PastReviewsPage    = lazy(() => import('@/pages/PastReviewsPage').then(m => ({ default: m.PastReviewsPage })))
 const VerifyPage         = lazy(() => import('@/pages/VerifyPage').then(m => ({ default: m.VerifyPage })))
@@ -146,6 +147,15 @@ export function App() {
           element={
             <ProtectedRoute>
               <AppShell><CredentialDetailPage /></AppShell>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/credentials/:id/trust-score"
+          element={
+            <ProtectedRoute>
+              <AppShell><TrustScoreHistoryPage /></AppShell>
             </ProtectedRoute>
           }
         />
