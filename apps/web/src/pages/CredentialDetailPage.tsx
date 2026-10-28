@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, FormEvent } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import QRCode from 'qrcode'
-import { Plus, Send, CheckCircle2, XCircle, Clock, AlertTriangle, ShieldCheck, ChevronDown, Trash2, ExternalLink } from 'lucide-react'
+import { Plus, Send, CheckCircle2, XCircle, Clock, AlertTriangle, ShieldCheck, ChevronDown, ChevronRight, Trash2, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
@@ -369,12 +369,19 @@ export function CredentialDetailPage() {
         )}
       </div>
 
-      <Card>
-        <CardHeader><span className={styles.sectionTitle}>Trust Score</span></CardHeader>
-        <CardBody>
-          <TrustBar score={credential.trustScore} />
-        </CardBody>
-      </Card>
+      <Link to={`/credentials/${credential.id}/trust-score`} className={styles.trustScoreLink} aria-label="View trust score history">
+        <Card>
+          <CardHeader>
+            <span className={styles.sectionTitle}>Trust Score</span>
+            <span className={styles.trustScoreHint}>
+              View history <ChevronRight size={14} aria-hidden />
+            </span>
+          </CardHeader>
+          <CardBody>
+            <TrustBar score={credential.trustScore} />
+          </CardBody>
+        </Card>
+      </Link>
 
       {credential.lifecycleStatus === 'MINTED' && (
         <Card>
