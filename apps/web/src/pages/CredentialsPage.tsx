@@ -4,6 +4,7 @@ import { PlusCircle, Eye, FileCheck2 } from 'lucide-react'
 import { useAuthStore } from '@/store/auth.store'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
+import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import api from '@/lib/api'
 import { statusVariant } from '@/lib/credentials'
 import styles from './CredentialsPage.module.css'
@@ -75,36 +76,36 @@ export function CredentialsPage() {
           )}
         </div>
       ) : (
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Skill</th>
-                <th>Layer</th>
-                <th>Status</th>
-                <th>Trust</th>
-                <th>Created</th>
-                <th><span className="sr-only">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              {credentials.map(c => (
-                <tr key={c.id}>
-                  <td className={styles.skillCell}>{c.skill}</td>
-                  <td><Badge variant={layerVariant(c.verificationLayer)}>Layer {c.verificationLayer}</Badge></td>
-                  <td><Badge variant={statusVariant(c.lifecycleStatus)}>{c.lifecycleStatus}</Badge></td>
-                  <td className={styles.scoreCell}>{c.trustScore}</td>
-                  <td className={styles.dateCell}>{new Date(c.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <Link to={`/credentials/${c.id}`}>
+        <ul className={styles.list}>
+          {credentials.map(c => (
+            <li key={c.id}>
+              <Card>
+                <CardHeader>
+                  <span className={styles.skill}>{c.skill}</span>
+                  <div className={styles.badges}>
+                    <Badge variant={layerVariant(c.verificationLayer)}>Layer {c.verificationLayer}</Badge>
+                    <Badge variant={statusVariant(c.lifecycleStatus)}>{c.lifecycleStatus}</Badge>
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  <div className={styles.meta}>
+                    <div className={styles.metaItem}>
+                      <span className={styles.metaLabel}>Trust score</span>
+                      <span className={styles.metaScore}>{c.trustScore}<span className={styles.metaScoreMax}> / 100</span></span>
+                    </div>
+                    <div className={styles.metaItem}>
+                      <span className={styles.metaLabel}>Created</span>
+                      <span className={styles.metaValue}>{new Date(c.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    <Link to={`/credentials/${c.id}`} className={styles.viewAction}>
                       <Button variant="ghost" size="sm" icon={<Eye size={14} strokeWidth={1.75} />}>View</Button>
                     </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </CardBody>
+              </Card>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   )
