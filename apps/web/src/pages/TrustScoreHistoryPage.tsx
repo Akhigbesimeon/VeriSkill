@@ -24,29 +24,12 @@ interface Credential {
   verificationLayer: number
 }
 
-const TRIGGER_LABELS: Record<string, string> = {
-  recalculation:            'Score recalculated',
-  url_validated:            'URL verified',
-  evidence_removed:         'Evidence removed',
-  repository_removed:       'Repository removed',
-  github_scan_completed:    'GitHub scan completed',
-  peer_review_approved:     'Peer review approved',
-  peer_review_flagged:      'Peer review flagged',
-  expert_review_submitted:  'Expert review submitted',
-  submitted_for_review:     'Submitted for review',
-  admin_recomputed:         'Admin recomputed',
-}
-
 const BREAKDOWN_LABELS: Record<string, string> = {
   selfDeclaration: 'What you claimed',
   urlEvidence:     'Links you provided',
   githubScan:      'Your code we checked',
   peerReview:      'Other devs agreed',
   expertReview:    'An expert confirmed',
-}
-
-function labelFor(trigger: string): string {
-  return TRIGGER_LABELS[trigger] ?? trigger.replace(/_/g, ' ')
 }
 
 function formatWhen(iso: string): string {
@@ -131,16 +114,15 @@ function TimelineRow({ entry }: { entry: HistoryEntry }) {
       <div className={styles.card}>
         <div className={styles.rowHead}>
           <span className={styles.when}>{formatWhen(entry.createdAt)}</span>
-          <span className={styles.trigger}>{labelFor(entry.triggerEvent)}</span>
-        </div>
-
-        <div className={styles.rowMeta}>
-          <DeltaBadge direction={direction} delta={delta} oldScore={oldScore} newScore={newScore} />
           {entry.oldLayer !== entry.newLayer ? (
             <Badge variant="info">Layer {entry.oldLayer} → {entry.newLayer}</Badge>
           ) : (
             <Badge variant="default">Layer {entry.newLayer}</Badge>
           )}
+        </div>
+
+        <div className={styles.rowMeta}>
+          <DeltaBadge direction={direction} delta={delta} oldScore={oldScore} newScore={newScore} />
         </div>
 
         {breakdownEntries.length > 0 && (
