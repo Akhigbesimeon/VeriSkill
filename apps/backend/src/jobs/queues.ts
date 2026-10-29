@@ -26,23 +26,7 @@ export const githubScanQueue = new Queue<{
   skill: Parameters<typeof scanRepository>[3]
 }>('github-scan', env.REDIS_URL, queueOptions)
 
-/** Workers */
-urlVerificationQueue.process('verify-url', 1, async (job) => {
-  console.log(`[Queue] url-verification — processing ${job.data.url}`)
-  await processEvidenceUrl(job.data.evidenceUrlId)
-})
-
-githubScanQueue.process('scan-github', 1, async (job) => {
-  console.log(`[Queue] github-scan — processing ${job.data.owner}/${job.data.repo}`)
-  await scanRepository(
-    job.data.githubScanId,
-    job.data.owner,
-    job.data.repo,
-    job.data.skill
-  )
-})
-
-/** Error handlers */
+/** Error handlers — safe on both API and worker side. */
 urlVerificationQueue.on('failed', (job, err) => {
   console.error(`[Queue] url-verification failed job=${job.id}:`, err.message)
 })
@@ -50,6 +34,27 @@ urlVerificationQueue.on('failed', (job, err) => {
 githubScanQueue.on('failed', (job, err) => {
   console.error(`[Queue] github-scan failed job=${job.id}:`, err.message)
 })
+
+/**
+ * Register job processors. Only the worker process should call this; the API
+ * process stays producer-only so a worker crash cannot take down the API.
+ */
+export function registerWorkers() {
+  urlVerificationQueue.process('verify-url', 1, async (job) => {
+    console.log(`[Queue] url-verification — processing ${job.data.url}`)
+    await processEvidenceUrl(job.data.evidenceUrlId)
+  })
+
+  githubScanQueue.process('scan-github', 1, async (job) => {
+    console.log(`[Queue] github-scan — processing ${job.data.owner}/${job.data.repo}`)
+    await scanRepository(
+      job.data.githubScanId,
+      job.data.owner,
+      job.data.repo,
+      job.data.skill
+    )
+  })
+}
 
 /** Lifecycle */
 export async function initQueues() {

@@ -1,35 +1,17 @@
-import { Router, Request, Response, NextFunction } from 'express'
-import { z } from 'zod'
+import { Router } from 'express'
 import { authenticate, requireRole } from '../middleware/auth.middleware'
 import { validate } from '../middleware/error.middleware'
 import * as CredentialService from '../services/credential.service'
-import { ApprovedSkill } from '../models/Credential'
 import { TrustScoreHistory } from '../models/TrustScoreHistory'
 import { mintCredential } from '../services/blockchain.service'
+import {
+  createCredentialSchema as createSchema,
+  evidenceUrlSchema as urlSchema,
+  githubRepoSchema as repoSchema,
+} from '@veriskill/shared'
 
 export const credentialRouter = Router()
 credentialRouter.use(authenticate)
-
-const APPROVED_SKILLS: [ApprovedSkill, ...ApprovedSkill[]] = [
-  'JavaScript','TypeScript','Python','Java','Kotlin','Swift',
-  'Go','Rust','C','C#','PHP','Ruby','Solidity',
-  'HTML','CSS','SQL',
-  'React','Node.js','Git','Docker',
-  'Kubernetes','AWS','Terraform',
-]
-
-const createSchema = z.object({
-  skill: z.enum(APPROVED_SKILLS),
-})
-
-const urlSchema = z.object({
-  url: z.string().url().startsWith('https://', 'URL must be HTTPS'),
-  evidenceDate: z.string().date().optional(),
-})
-
-const repoSchema = z.object({
-  repoUrl: z.string().url().includes('github.com', { message: 'Must be a GitHub URL' }),
-})
 
 /** POST /api/v1/credentials — create a new credential (DRAFT) */
 credentialRouter.post('/', requireRole('developer'), async (req, res, next) => {
