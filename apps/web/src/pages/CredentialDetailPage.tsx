@@ -35,6 +35,12 @@ interface GithubScan {
   lastCommitAt: string | null
 }
 
+interface FlagRationale {
+  id: string
+  rationale: string | null
+  submittedAt: string | null
+}
+
 interface Credential {
   id: string
   skill: string
@@ -45,6 +51,8 @@ interface Credential {
   evidenceUrls: EvidenceUrl[]
   githubScans: GithubScan[]
   createdAt: string
+  flagCount?: number
+  flagRationales?: FlagRationale[]
 }
 
 // Official GitHub "Invertocat" mark (github.com/logos). Inlined to avoid adding a dependency.
@@ -346,6 +354,9 @@ export function CredentialDetailPage() {
           <div className={styles.badges}>
             <Badge variant={statusVariant(credential.lifecycleStatus)}>{credential.lifecycleStatus.replace(/_/g, ' ')}</Badge>
             <Badge variant="default">Layer {credential.verificationLayer}</Badge>
+            {(credential.flagCount ?? 0) > 0 && (
+              <Badge variant="warning">Flagged by {credential.flagCount} reviewer{credential.flagCount === 1 ? '' : 's'}</Badge>
+            )}
             {credential.tokenId && <Badge variant="success">On-chain #{credential.tokenId}</Badge>}
             {credential.tokenId && <ExplorerLink tokenId={credential.tokenId} />}
           </div>
@@ -368,6 +379,30 @@ export function CredentialDetailPage() {
           >{''}</Button>
         )}
       </div>
+
+      {(credential.flagCount ?? 0) > 0 && credential.flagRationales && credential.flagRationales.length > 0 && (
+        <Card>
+          <CardHeader>
+            <span className={styles.sectionTitle}>Reviewer concerns</span>
+            <Badge variant="warning">{credential.flagCount}</Badge>
+          </CardHeader>
+          <CardBody>
+            <ul className={styles.list}>
+              {credential.flagRationales.map(f => (
+                <li key={f.id} className={styles.listItem}>
+                  <AlertTriangle size={14} color="var(--color-warning)" aria-hidden />
+                  <span style={{ flex: 1 }}>{f.rationale ?? '(no rationale provided)'}</span>
+                  {f.submittedAt && (
+                    <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
+                      {new Date(f.submittedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </CardBody>
+        </Card>
+      )}
 
       <Link to={`/credentials/${credential.id}/trust-score`} className={styles.trustScoreLink} aria-label="View trust score history">
         <Card>

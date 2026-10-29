@@ -1,3 +1,4 @@
+import { fn, col } from 'sequelize'
 import { Credential, ApprovedSkill } from '../models/Credential'
 import { EvidenceUrl } from '../models/EvidenceUrl'
 import { GithubScan } from '../models/GithubScan'
@@ -26,7 +27,18 @@ export async function listCredentials(userId: string, role: UserRole) {
       include: [{ model: User, as: 'developer', attributes: ['id', 'displayName', 'location'] }],
     })
   }
-  return Credential.findAll({ where: { developerId: userId } })
+  const credentials = await Credential.findAll({ where: { developerId: userId } })
+  if (credentials.length === 0) return credentials
+
+  const flagCounts = await PeerReview.findAll({
+    attributes: ['credentialId', [fn('COUNT', col('id')), 'count']],
+    where: { credentialId: credentials.map(c => c.id), status: 'FLAGGED' },
+    group: ['credentialId'],
+    raw: true,
+  }) as unknown as Array<{ credentialId: string; count: string }>
+
+  const by = new Map(flagCounts.map(r => [r.credentialId, Number(r.count)]))
+  return credentials.map(c => ({ ...c.toJSON(), flagCount: by.get(c.id) ?? 0 }))
 }
 
 export async function getCredential(
@@ -55,7 +67,21 @@ export async function getCredential(
     throw new NotFoundError('Credential not found')
   }
 
-  return credential
+  const flagged = await PeerReview.findAll({
+    where: { credentialId, status: 'FLAGGED' },
+    attributes: ['id', 'rationale', 'submittedAt'],
+    order: [['submittedAt', 'DESC']],
+  })
+
+  return {
+    ...credential.toJSON(),
+    flagCount: flagged.length,
+    flagRationales: flagged.map(f => ({
+      id: f.id,
+      rationale: f.rationale,
+      submittedAt: f.submittedAt,
+    })),
+  }
 }
 
 export async function submitEvidence(

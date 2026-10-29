@@ -16,6 +16,7 @@ interface Credential {
   lifecycleStatus: string
   trustScore: number
   createdAt: string
+  flagCount?: number
 }
 
 function layerVariant(l: number): 'default' | 'info' | 'accent' | 'success' {
@@ -85,6 +86,9 @@ export function CredentialsPage() {
                   <div className={styles.badges}>
                     <Badge variant={layerVariant(c.verificationLayer)}>Layer {c.verificationLayer}</Badge>
                     <Badge variant={statusVariant(c.lifecycleStatus)}>{c.lifecycleStatus}</Badge>
+                    {(c.flagCount ?? 0) > 0 && (
+                      <Badge variant="warning">Flagged ({c.flagCount})</Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardBody>

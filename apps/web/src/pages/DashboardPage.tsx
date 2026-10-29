@@ -16,6 +16,7 @@ interface Credential {
   verificationLayer: number
   lifecycleStatus: string
   trustScore: number
+  flagCount?: number
 }
 
 interface RecentScan {
@@ -241,6 +242,9 @@ export function DashboardPage() {
                   <div className={styles.recentBadges}>
                     <Badge variant="default">Layer {c.verificationLayer}</Badge>
                     <Badge variant={statusVariant(c.lifecycleStatus)}>{c.lifecycleStatus}</Badge>
+                    {(c.flagCount ?? 0) > 0 && (
+                      <Badge variant="warning">Flagged ({c.flagCount})</Badge>
+                    )}
                   </div>
                 </div>
                 <Link to={`/credentials/${c.id}`}>
