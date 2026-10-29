@@ -29,6 +29,7 @@
     "express": "^4.19.0",
     "express-rate-limit": "^7.3.0",
     "helmet": "^7.1.0",
+    "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.0",
     "pg": "^8.12.0",
     "pg-connection-string": "^2.6.0",
