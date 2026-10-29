@@ -5,7 +5,7 @@ import { GithubScan } from '../models/GithubScan'
 import { User, UserRole } from '../models/User'
 import { PeerReview } from '../models/PeerReview'
 import { NotFoundError, ForbiddenError, ValidationError } from '../middleware/error.middleware'
-import { urlVerificationQueue, githubScanQueue } from '../jobs/queues'
+import { urlVerificationQueue, githubScanQueue, safeEnqueue } from '../jobs/queues'
 import { calculateTrustScore } from './trust-score.service'
 import { assignPeerReviewers } from './peer-review.service'
 import { preflightSkillMatch } from './github-scan.service'
@@ -103,11 +103,16 @@ export async function submitEvidence(
     validationStatus: 'PENDING',
   })
 
-  await urlVerificationQueue.add('verify-url', {
-    evidenceUrlId: evidence.id,
-    credentialId,
-    url,
-  })
+  try {
+    await safeEnqueue(
+      urlVerificationQueue,
+      'verify-url',
+      { evidenceUrlId: evidence.id, credentialId, url },
+      () => evidence.destroy(),
+    )
+  } catch {
+    throw new ValidationError('Could not schedule URL verification. Please try again.')
+  }
 
   if (credential.lifecycleStatus === 'DRAFT') {
     await credential.update({ lifecycleStatus: 'ACTIVE' })
@@ -140,13 +145,16 @@ export async function submitGithubRepo(
     scanStatus: 'PENDING',
   })
 
-  await githubScanQueue.add('scan-github', {
-    githubScanId: scan.id,
-    credentialId,
-    owner,
-    repo: repoName,
-    skill: credential.skill,
-  })
+  try {
+    await safeEnqueue(
+      githubScanQueue,
+      'scan-github',
+      { githubScanId: scan.id, credentialId, owner, repo: repoName, skill: credential.skill },
+      () => scan.destroy(),
+    )
+  } catch {
+    throw new ValidationError('Could not schedule GitHub scan. Please try again.')
+  }
 
   return { scan, message: 'Repository submitted — scan in progress' }
 }
