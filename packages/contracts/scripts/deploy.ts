@@ -43,12 +43,23 @@ async function main() {
   }
 
   console.log(`Admin:     ${adminAddress}`)
+
+  // ── Resolve EAS wiring ────────────────────────────────────────────────────
+  // The constructor needs the EAS core address and a registered schema UID.
+  // Both are chain-specific — Sepolia defaults are in docs; override via .env.
+  const easAddress = process.env.EAS_ADDRESS
+  const schemaUid  = process.env.EAS_SCHEMA_UID
+  if (!easAddress) throw new Error('EAS_ADDRESS must be set in .env (e.g. 0xC2679f...1815e on Sepolia)')
+  if (!schemaUid)  throw new Error('EAS_SCHEMA_UID must be set in .env (the schema registered against VeriSkillResolver)')
+
+  console.log(`EAS:       ${easAddress}`)
+  console.log(`Schema:    ${schemaUid}`)
   console.log('')
 
   // ── Deploy ────────────────────────────────────────────────────────────────
   console.log('Deploying VeriSkillCredential...')
   const factory = await ethers.getContractFactory('VeriSkillCredential')
-  const contract = await factory.deploy(adminAddress)
+  const contract = await factory.deploy(adminAddress, easAddress, schemaUid)
   await contract.waitForDeployment()
 
   const contractAddress = await contract.getAddress()

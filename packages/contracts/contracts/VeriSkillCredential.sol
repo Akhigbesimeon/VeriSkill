@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import { IEAS, AttestationRequest, AttestationRequestData, RevocationRequest, RevocationRequestData } from "@ethereum-attestation-service/eas-contracts/contracts/IEAS.sol";
 
 /**
@@ -26,11 +28,22 @@ import { IEAS, AttestationRequest, AttestationRequestData, RevocationRequest, Re
  *   Slot 2: commitHash
  *   Slot 3: easAttestationUid
  */
-contract VeriSkillCredential is ERC721, AccessControl {
+contract VeriSkillCredential is ERC721, AccessControl, EIP712 {
 
     bytes32 public constant ISSUER_ROLE  = keccak256("ISSUER_ROLE");
     bytes32 public constant UPDATER_ROLE = keccak256("UPDATER_ROLE");
     bytes32 public constant REVOKER_ROLE = keccak256("REVOKER_ROLE");
+
+    // EIP-712 typehash for the mint voucher. The backend holding ISSUER_ROLE
+    // signs this; the developer submits the signed voucher via mintWithVoucher,
+    // so the on-chain actor is the developer's own wallet while the backend
+    // still gates whether a mint is allowed.
+    bytes32 public constant MINT_VOUCHER_TYPEHASH = keccak256(
+        "MintVoucher(address to,bytes32 skillId,bytes32 commitHash,uint8 layer,uint256 deadline,uint256 nonce)"
+    );
+
+    // Per-recipient nonce — prevents replay of the same voucher twice.
+    mapping(address => uint256) private _nonces;
 
     uint8 public constant MIN_LAYER_TO_MINT = 4;
     uint8 public constant MAX_LAYER = 6;
@@ -95,6 +108,9 @@ contract VeriSkillCredential is ERC721, AccessControl {
     error CredentialAlreadyRevoked(uint256 tokenId);
     error CredentialAlreadySuspended(uint256 tokenId);
     error CredentialNotSuspended(uint256 tokenId);
+    error VoucherExpired(uint256 deadline, uint256 nowTs);
+    error VoucherRecipientMismatch(address expected, address caller);
+    error VoucherSignerUnauthorized(address signer);
 
     /**
      * @param admin      Address granted DEFAULT_ADMIN_ROLE + REVOKER_ROLE.
@@ -105,7 +121,7 @@ contract VeriSkillCredential is ERC721, AccessControl {
         address admin,
         IEAS _eas,
         bytes32 _schemaUid
-    ) ERC721("VeriSkill Credential", "VSC") {
+    ) ERC721("VeriSkill Credential", "VSC") EIP712("VeriSkillCredential", "1") {
         require(admin != address(0), "VeriSkill: admin cannot be zero address");
         require(address(_eas) != address(0), "VeriSkill: EAS cannot be zero address");
         require(_schemaUid != bytes32(0), "VeriSkill: schemaUid cannot be zero");
@@ -128,6 +144,50 @@ contract VeriSkillCredential is ERC721, AccessControl {
         bytes32 commitHash,
         uint8   layer
     ) external onlyRole(ISSUER_ROLE) returns (uint256) {
+        return _doMint(to, skillId, commitHash, layer);
+    }
+
+    /**
+     * @notice Mint using an EIP-712 signed voucher from an ISSUER_ROLE holder.
+     * @dev The developer calls this from their own wallet (msg.sender == to).
+     *   The off-chain backend verifies the credential, then signs the voucher;
+     *   the developer pays gas and triggers the on-chain action. Replay is
+     *   prevented by a per-recipient nonce.
+     */
+    function mintWithVoucher(
+        address to,
+        bytes32 skillId,
+        bytes32 commitHash,
+        uint8   layer,
+        uint256 deadline,
+        bytes calldata signature
+    ) external returns (uint256) {
+        if (block.timestamp > deadline) revert VoucherExpired(deadline, block.timestamp);
+        if (msg.sender != to) revert VoucherRecipientMismatch(to, msg.sender);
+
+        uint256 nonce = _nonces[to];
+        bytes32 structHash = keccak256(abi.encode(
+            MINT_VOUCHER_TYPEHASH, to, skillId, commitHash, layer, deadline, nonce
+        ));
+        bytes32 digest = _hashTypedDataV4(structHash);
+        address signer = ECDSA.recover(digest, signature);
+        if (!hasRole(ISSUER_ROLE, signer)) revert VoucherSignerUnauthorized(signer);
+
+        _nonces[to] = nonce + 1;
+        return _doMint(to, skillId, commitHash, layer);
+    }
+
+    /// Current nonce for `user`. The backend reads this when building a voucher.
+    function nonces(address user) external view returns (uint256) {
+        return _nonces[user];
+    }
+
+    function _doMint(
+        address to,
+        bytes32 skillId,
+        bytes32 commitHash,
+        uint8   layer
+    ) internal returns (uint256) {
         if (layer < MIN_LAYER_TO_MINT) revert LayerBelowMintMinimum(MIN_LAYER_TO_MINT, layer);
         if (layer > MAX_LAYER) revert InvalidLayer(layer);
 

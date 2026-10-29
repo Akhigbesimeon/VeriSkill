@@ -1,17 +1,16 @@
 {
   "network": "sepolia",
-  "deployedAt": "2026-10-21T20:06:27.137Z",
+  "contractName": "VeriSkillCredential",
+  "address": "0x14032516c8e06CC0530b1BA8F9345B10315b5C4A",
   "admin": "0x5CE9aA6601ba6B65BB99D2ff693d8450C94E2568",
-  "eas": "0xC2679fBD37d54388Ce493F1DB75320D236e1815e",
-  "schemaRegistry": "0x0a7E2Ff54e76B8E6659aedc9103FB21c038050D0",
-  "schemaUid": "0x9a897bce347acd27162208c5ac79a24eab240b14005071f3812c70b8ff2686d3",
-  "resolver": "0xac3D94C6418fB3B0C00D8C38A11E791B096c7190",
-  "credential": "0x36BF3360Aea1Ced86AC4f203292d18DB24D78666",
+  "deployedAt": "2026-10-29T22:50:25.558Z",
+  "txHash": "0x0c7ff0b9d64148749c26d7e0e7aaeb4a891aadab791df1e98596f66549848bdf",
+  "gasUsed": "17979202",
   "compilerVersion": "0.8.24",
   "evmVersion": "cancun",
   "optimizer": {
     "enabled": true,
-    "runs": 10000,
+    "runs": 200,
     "viaIR": true
   }
 }

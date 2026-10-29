@@ -3,7 +3,8 @@ import { authenticate, requireRole } from '../middleware/auth.middleware'
 import { validate } from '../middleware/error.middleware'
 import * as CredentialService from '../services/credential.service'
 import { TrustScoreHistory } from '../models/TrustScoreHistory'
-import { mintCredential } from '../services/blockchain.service'
+import { mintCredential, signMintVoucher, confirmMint } from '../services/blockchain.service'
+import { z } from 'zod'
 import {
   createCredentialSchema as createSchema,
   evidenceUrlSchema as urlSchema,
@@ -103,12 +104,43 @@ credentialRouter.post('/:id/submit', requireRole('developer'), async (req, res, 
   } catch (err) { next(err) }
 })
 
-/** POST /api/v1/credentials/:id/mint — developer mints their own credential once Layer ≥ 4 */
+/**
+ * POST /api/v1/credentials/:id/mint — managed-wallet fallback. The backend
+ * signs AND submits the on-chain tx on the developer's behalf. Only used
+ * for users whose walletType is 'managed'; self-custody users should use
+ * the voucher flow below so they sign the tx themselves.
+ */
 credentialRouter.post('/:id/mint', requireRole('developer'), async (req, res, next) => {
   try {
     const tokenId = await mintCredential(req.params.id, req.user!.id, {
       requireOwnership: req.user!.id,
     })
+    res.json({ message: 'Credential minted', tokenId })
+  } catch (err) { next(err) }
+})
+
+/**
+ * POST /api/v1/credentials/:id/mint/voucher — issue an EIP-712 signed voucher
+ * the developer takes to their own wallet to mint the credential on-chain
+ * themselves. The backend never submits a tx on this path.
+ */
+credentialRouter.post('/:id/mint/voucher', requireRole('developer'), async (req, res, next) => {
+  try {
+    const signed = await signMintVoucher(req.params.id, req.user!.id)
+    res.json(signed)
+  } catch (err) { next(err) }
+})
+
+/**
+ * POST /api/v1/credentials/:id/mint/confirm — called by the frontend after
+ * the developer's wallet broadcasts mintWithVoucher. Verifies the tx on-chain
+ * and persists the credential as MINTED.
+ */
+const confirmSchema = z.object({ txHash: z.string().regex(/^0x[0-9a-fA-F]{64}$/, 'Invalid tx hash') })
+credentialRouter.post('/:id/mint/confirm', requireRole('developer'), async (req, res, next) => {
+  try {
+    const { txHash } = validate(confirmSchema, req.body)
+    const tokenId = await confirmMint(req.params.id, req.user!.id, txHash)
     res.json({ message: 'Credential minted', tokenId })
   } catch (err) { next(err) }
 })

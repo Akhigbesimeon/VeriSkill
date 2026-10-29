@@ -2,14 +2,17 @@ import { useState, useEffect, useRef, FormEvent } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import QRCode from 'qrcode'
+import { ethers } from 'ethers'
 import { Plus, Send, CheckCircle2, XCircle, Clock, AlertTriangle, ShieldCheck, ChevronDown, ChevronRight, Trash2, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Input } from '@/components/ui/Input'
-import api from '@/lib/api'
+import api, { extractErrorMessage } from '@/lib/api'
+import { useAuthStore } from '@/store/auth.store'
 import { statusVariant } from '@/lib/credentials'
+import VeriSkillCredentialABI from '@veriskill/shared/src/abi/VeriSkillCredential.json'
 import styles from './CredentialDetailPage.module.css'
 
 interface EvidenceUrl {
@@ -33,6 +36,64 @@ interface GithubScan {
   healthBreakdown: Record<string, number> | null
   commitCount: number | null
   lastCommitAt: string | null
+}
+
+interface SignedMintVoucher {
+  voucher: {
+    to:         string
+    skillId:    string
+    commitHash: string
+    layer:      number
+    deadline:   number
+    nonce:      string
+  }
+  signature:       string
+  chainId:         number
+  contractAddress: string
+}
+
+/**
+ * Self-custody mint: fetch a signed voucher from the backend, submit the tx
+ * from the developer's own wallet, then notify the backend to persist.
+ */
+async function mintWithUserWallet(credentialId: string): Promise<unknown> {
+  const anyWindow = window as unknown as { ethereum?: ethers.Eip1193Provider }
+  if (!anyWindow.ethereum) {
+    throw new Error('No browser wallet detected. Install MetaMask or a compatible wallet.')
+  }
+
+  const { data } = await api.post<SignedMintVoucher>(`/credentials/${credentialId}/mint/voucher`)
+  const { voucher, signature, chainId, contractAddress } = data
+
+  const browserProvider = new ethers.BrowserProvider(anyWindow.ethereum)
+  const network = await browserProvider.getNetwork()
+  if (Number(network.chainId) !== chainId) {
+    throw new Error(
+      `Wrong network. Please switch your wallet to chain ID ${chainId} (currently ${Number(network.chainId)}).`
+    )
+  }
+
+  const signer = await browserProvider.getSigner()
+  const signerAddress = (await signer.getAddress()).toLowerCase()
+  if (signerAddress !== voucher.to.toLowerCase()) {
+    throw new Error(
+      `Connected wallet (${signerAddress}) does not match your saved address (${voucher.to}).`
+    )
+  }
+
+  const contract = new ethers.Contract(contractAddress, VeriSkillCredentialABI, signer)
+  const tx = await contract.mintWithVoucher(
+    voucher.to,
+    voucher.skillId,
+    voucher.commitHash,
+    voucher.layer,
+    voucher.deadline,
+    signature,
+  )
+  const receipt = await tx.wait()
+
+  return api.post(`/credentials/${credentialId}/mint/confirm`, { txHash: receipt.hash })
+    .then(r => r.data)
 }
 
 interface FlagRationale {
@@ -317,9 +378,21 @@ export function CredentialDetailPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['credentials'] }); navigate('/credentials') },
   })
 
+  const { user } = useAuthStore()
+  const [mintError, setMintError] = useState<string | null>(null)
+
   const mint = useMutation({
-    mutationFn: () => api.post(`/credentials/${id}/mint`),
+    mutationFn: async () => {
+      setMintError(null)
+      // Self-custody: developer signs the tx themselves via their browser wallet.
+      // Managed: backend signs AND submits on their behalf (gasless, legacy flow).
+      if (user?.walletType === 'self_custody') {
+        return mintWithUserWallet(id!)
+      }
+      return api.post(`/credentials/${id}/mint`).then(r => r.data)
+    },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['credential', id] }) },
+    onError: (err) => { setMintError(extractErrorMessage(err, 'Mint failed.')) },
   })
 
   const handleAddUrl = (e: FormEvent) => {
@@ -362,13 +435,20 @@ export function CredentialDetailPage() {
           </div>
         </div>
         {canMint && (
-          <Button
-            icon={<ShieldCheck size={16} />}
-            loading={mint.isPending}
-            onClick={() => mint.mutate()}
-          >
-            Mint on-chain
-          </Button>
+          <div>
+            <Button
+              icon={<ShieldCheck size={16} />}
+              loading={mint.isPending}
+              onClick={() => mint.mutate()}
+            >
+              Mint on-chain
+            </Button>
+            {mintError && (
+              <p role="alert" style={{ color: 'var(--color-danger)', fontSize: '0.85rem', marginTop: 6, maxWidth: 360 }}>
+                {mintError}
+              </p>
+            )}
+          </div>
         )}
         {canEdit && (
           <Button
