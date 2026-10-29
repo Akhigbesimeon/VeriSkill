@@ -230,10 +230,15 @@ Consensus mechanisms allow network participants to agree on a valid transaction 
 
 Make sure you have the following installed on your local machine:
 
-* [Node.js](https://nodejs.org/) (v18+)
-* [PostgreSQL](https://www.postgresql.org/) (or Docker for running a local DB container)
-* [Expo CLI](https://docs.expo.dev/get-started/installation/)
+* [Node.js](https://nodejs.org/) **v20+** and npm **v10+** (enforced via `engines` in the root `package.json`)
+* [PostgreSQL](https://www.postgresql.org/) **v14+** (or Docker for running a local DB container)
+* [Redis](https://redis.io/) **v6+** — required by the Bull queue worker (`apps/backend` worker process will not start without it)
+* [Expo CLI](https://docs.expo.dev/get-started/installation/) — optional; the install steps below use `npx expo`, which pulls the CLI on demand
 * Git
+
+**Hardware:** ~8 GB RAM and ~10 GB free disk recommended for a full dev install (web + mobile + backend + Hardhat node + Postgres + Redis). To exercise the mobile recruiter flow you need a physical Android/iOS device with the Expo Go app on the same Wi-Fi network, or a running Android/iOS emulator.
+
+**Supported OS:** Windows 10+, macOS 12+, and modern Linux distributions. All framework and library versions are pinned in each workspace's `package.json` — Solidity `^0.8.24`, Hardhat `^3.18`, Ethers `^6.13`, Express `^4.19`, Sequelize `^6.37`, Bull `^4.12`, React `^19.1`, Vite `^5.4`, Expo SDK `~57.0`, React Native `0.86.3`, TypeScript `^5.5+`.
 
 ### 1. Clone the Repository
 
