@@ -237,7 +237,7 @@ Make sure you have the following installed on your local machine:
 
 **Hardware:** ~8 GB RAM and ~10 GB free disk recommended for a full dev install (web + mobile + backend + Hardhat node + Postgres + Redis). To exercise the mobile recruiter flow you need a physical Android/iOS device with the Expo Go app on the same Wi-Fi network, or a running Android/iOS emulator.
 
-**Supported OS:** Windows 10+, macOS 12+, and modern Linux distributions. All framework and library versions are pinned in each workspace's `package.json` — Solidity `^0.8.24`, Hardhat `^3.18`, Ethers `^6.13`, Express `^4.19`, Sequelize `^6.37`, Bull `^4.12`, React `^19.1`, Vite `^5.4`, Expo SDK `~57.0`, React Native `0.86.3`, TypeScript `^5.5+`.
+**Supported OS:** Windows 10+, macOS 12+, and modern Linux distributions. All framework and library versions are pinned in each workspace's `package.json` — Solidity `^0.8.24`, Hardhat `^2.22`, Ethers `^6.13`, Express `^4.19`, Sequelize `^6.37`, Bull `^4.12`, React `^19.1`, Vite `^5.4`, Expo SDK `~57.0`, React Native `0.86.3`, TypeScript `^5.5+`.
 
 ### 1. Clone the Repository
 
@@ -297,6 +297,48 @@ npx expo start
 ```
 
 Scan the QR code generated in the terminal using the Expo Go app on your physical mobile device to test the recruiter interface.
+
+## Testing
+
+Automated tests cover the smart contracts and the backend. The web and mobile apps have Vitest / Jest configured but no suites yet.
+
+### Smart contracts (Hardhat + Chai)
+
+Located in `packages/contracts/test/`:
+
+* **`VeriSkillCredential.test.ts`** — 68 unit tests covering mint, access control (`ISSUER_ROLE` / `UPDATER_ROLE` / `REVOKER_ROLE`), soulbound transfer blocking, commit-hash privacy, lifecycle events, and revocation.
+* **`GasBenchmark.test.ts`** — gas benchmark comparing `VeriSkillCredential` against the naive `ReferenceERC721`, asserting the ≥30 % gas reduction target.
+
+```bash
+cd packages/contracts
+npm test              # run all contract tests
+npm run bench         # gas benchmark only
+npm run test:gas      # all tests with the hardhat-gas-reporter table
+npm run coverage      # solidity-coverage report
+```
+
+### Backend (Jest + Supertest)
+
+Located in `apps/backend/tests/`:
+
+* **Unit (`tests/unit/`)** — route and service tests for `admin.routes`, `expert-review.service`, `github-scan.service`, `trust-score.service`, and `url-verification.service`. No external services needed.
+* **Integration (`tests/integration/mint-flow.test.ts`)** — end-to-end credential mint flow against a real database and queue. **Requires PostgreSQL and Redis to be running** with migrations applied against the test DB.
+
+```bash
+cd apps/backend
+npm test                   # unit tests only (integration ignored)
+npm run test:integration   # requires Postgres + Redis
+npm run test:coverage      # unit tests with coverage report
+```
+
+### Running everything from the root
+
+```bash
+npm run test:contracts     # Hardhat suite
+npm run test:backend       # backend unit tests
+```
+
+Integration tests are deliberately **not** wired into `npm run test:backend` so a missing Redis container doesn't break the default `test` command.
 
 ## Deployment
 
