@@ -48,8 +48,7 @@ The system calculates a dynamic Trust Score based on the completion of the verif
 * **Backend:** Node.js, Express, PostgreSQL, Sequelize (ORM), Ethers v6, JWT, Bull (Redis-backed job queues)
 * **Web Frontend:** Vite + React, TypeScript, React Router, CSS Modules, Zustand, TanStack Query, Zod, Axios
 * **Mobile App:** Expo (React Native) with Expo Router
-* **Current pilot deploy:** Render.com — a `veriskill-backend` web service and a `veriskill-worker` background worker, both defined in `render.yaml`
-* **Target infrastructure (planned):** Vercel for the web app, AWS EC2 / Heroku for the API, AWS RDS for PostgreSQL, EAS Build for the mobile binary
+* **Deployment:** Render.com (API + worker), Supabase (managed PostgreSQL), Vercel (web app), EAS Build (mobile binary)
 
 ## Project Structure
 
@@ -299,11 +298,11 @@ npx expo start
 
 Scan the QR code generated in the terminal using the Expo Go app on your physical mobile device to test the recruiter interface.
 
-## Deployment Plan
+## Deployment
 
-The pilot runs on a single provider (Render.com) to keep operations simple while the project is still validating product-market fit in Kigali. The multi-cloud plan below describes the **target architecture** once the project graduates from pilot to production.
+The project ships across four platforms, one per workload.
 
-### Current pilot deploy (Render.com)
+### Backend API + worker — Render.com
 
 Everything the backend needs ships via `render.yaml` at the repo root:
 
@@ -311,46 +310,29 @@ Everything the backend needs ships via `render.yaml` at the repo root:
 * `veriskill-worker` — Separate background worker running `start:worker`, so a worker crash cannot take the API down.
 * Both services share the same build command (`npm run build --workspace=apps/backend`) and read the same env vars (DB URL, RPC URL, `ISSUER_PRIVATE_KEY`, etc.).
 
-The web app and mobile app are not currently deployed under `render.yaml`; the web app runs locally against the deployed backend during the pilot.
+### Database — Supabase (managed PostgreSQL)
 
-### Planned (target) architecture
+1. Create a Supabase project; copy the pooled connection string into `DATABASE_URL` on both Render services.
+2. Run `npx sequelize-cli db:migrate` against it from a workstation (or via a one-off Render job).
+3. Use Supabase's connection pooler endpoint — Render spins workers up and down, so per-connection Postgres is wasteful.
 
-#### Phase 1: Database
+### Smart contracts — Ethereum (Sepolia → mainnet)
 
-* **Platform:** AWS RDS (managed PostgreSQL)
-* **Action:** Provision a managed instance, secure it in a VPC, whitelist the backend egress IPs. Migration from the pilot DB is a `pg_dump` / `pg_restore` cutover during a maintenance window.
+1. Run unit tests and gas benchmarks (`GasBenchmark.test.ts`) under Hardhat.
+2. Deploy `VeriSkillCredential` to Sepolia via `scripts/deploy.ts`.
+3. Verify on Etherscan for transparency.
+4. Update `CONTRACT_ADDRESS` in backend/web env and copy the ABI into `packages/shared/src/abi/`.
 
-#### Phase 2: Smart Contract Deployment
+### Web app — Vercel
 
-* **Platform:** Ethereum testnet (Sepolia) → mainnet
-* **Action:**
-  1. Run unit tests and gas benchmarks (`GasBenchmark.test.ts`) under Hardhat.
-  2. Deploy `VeriSkillCredential` to the testnet via `scripts/deploy.ts`.
-  3. Verify on Etherscan for transparency.
-  4. Update `CONTRACT_ADDRESS` in backend/web env and copy the ABI into `packages/shared/src/abi/`.
+1. Connect the GitHub repo and configure the Vite build (`npm run build --workspace=apps/web`, output `dist/`).
+2. Set `VITE_API_URL` and other client env vars.
+3. Enable preview deploys per PR.
 
-#### Phase 3: Backend API
+### Mobile app — Expo Application Services (EAS)
 
-* **Platform:** AWS EC2 (or Heroku) behind a load balancer
-* **Action:**
-  1. Containerise the Express app (Dockerfile is a future deliverable, not in-tree yet).
-  2. Deploy behind HTTPS with managed certificates.
-  3. Promote the worker to its own autoscaling group so job spikes don't contend with API capacity.
-
-#### Phase 4: Web Application
-
-* **Platform:** Vercel (static + serverless)
-* **Action:**
-  1. Connect the GitHub repo and configure the Vite build (`npm run build --workspace=apps/web`, output `dist/`).
-  2. Set `VITE_API_URL` and other client env vars.
-  3. Enable preview deploys per PR.
-
-#### Phase 5: Mobile Application
-
-* **Platform:** Expo Application Services (EAS)
-* **Action:**
-  1. `eas build` the Android (`.apk` / `.aab`) and iOS binaries.
-  2. Distribute to the five pilot recruiters via internal tracks (TestFlight / Play Console internal testing).
+1. `eas build` the Android (`.apk` / `.aab`) and iOS binaries.
+2. Distribute to the five pilot recruiters via internal tracks (TestFlight / Play Console internal testing).
 
 ### Operations
 
