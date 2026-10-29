@@ -2,7 +2,13 @@ import { expect } from 'chai'
 import { ethers } from 'hardhat'
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers'
 import { VeriSkillCredential, ReferenceERC721 } from '../typechain-types'
-import { ContractTransactionReceipt } from 'ethers'
+import {
+  VeriSkillCredential__factory,
+  VeriSkillResolver__factory,
+  EAS__factory,
+  SchemaRegistry__factory,
+} from '../typechain-types'
+import type { ContractTransactionReceipt, Log } from 'ethers'
 
 // ─── Test helpers ─────────────────────────────────────────────────────────────
 
@@ -10,6 +16,7 @@ const ISSUER_ROLE  = ethers.keccak256(ethers.toUtf8Bytes('ISSUER_ROLE'))
 const UPDATER_ROLE = ethers.keccak256(ethers.toUtf8Bytes('UPDATER_ROLE'))
 const REVOKER_ROLE = ethers.keccak256(ethers.toUtf8Bytes('REVOKER_ROLE'))
 const DEFAULT_ADMIN_ROLE = ethers.ZeroHash
+const SCHEMA = 'bytes32 skillId,bytes32 commitHash,uint8 layer,uint256 tokenId'
 
 /** Build a deterministic bytes32 skill ID matching the Phase 0 spec. */
 function makeSkillId(name: string, version = '1'): string {
@@ -34,9 +41,33 @@ async function deployFixture() {
   const [deployer, admin, issuer, updater, revoker, developer, other] =
     await ethers.getSigners()
 
-  const factory = await ethers.getContractFactory('VeriSkillCredential')
-  const contract = (await factory.deploy(admin.address)) as unknown as VeriSkillCredential
+  const registry = await new SchemaRegistry__factory(deployer).deploy()
+  await registry.waitForDeployment()
+
+  const eas = await new EAS__factory(deployer).deploy(await registry.getAddress())
+  await eas.waitForDeployment()
+
+  const resolver = await new VeriSkillResolver__factory(deployer).deploy(
+    await eas.getAddress(),
+    admin.address,
+  )
+  await resolver.waitForDeployment()
+
+  const regTx = await registry.register(SCHEMA, await resolver.getAddress(), true)
+  const regReceipt = await regTx.wait()
+  const regLog = regReceipt!.logs.find((l: Log) => {
+    try { return registry.interface.parseLog(l as any)?.name === 'Registered' } catch { return false }
+  })
+  const schemaUid: string = registry.interface.parseLog(regLog as any)!.args.uid
+
+  const contract = (await new VeriSkillCredential__factory(deployer).deploy(
+    admin.address,
+    await eas.getAddress(),
+    schemaUid,
+  )) as unknown as VeriSkillCredential
   await contract.waitForDeployment()
+
+  await resolver.connect(admin).setAttester(await contract.getAddress())
 
   // Create a typed connected instance for the admin
   const adminContract = contract.connect(admin) as VeriSkillCredential
@@ -48,9 +79,10 @@ async function deployFixture() {
   await adminContract.grantRole(UPDATER_ROLE, updater.address)
 
 
-  return { 
+  return {
     contract, deployer, admin, issuer, updater, revoker, developer, other,
-    adminContract, issuerContract, updaterContract 
+    adminContract, issuerContract, updaterContract,
+    eas, resolver, schemaUid,
   }
 }
 
@@ -118,9 +150,15 @@ describe('VeriSkillCredential', () => {
     })
 
     it('reverts if admin is the zero address', async () => {
-      const factory = await ethers.getContractFactory('VeriSkillCredential')
-      await expect(factory.deploy(ethers.ZeroAddress))
-        .to.be.revertedWith('VeriSkill: admin cannot be zero address')
+      // Need a valid EAS + schemaUid so we hit the admin check, not the EAS guards.
+      const { eas, schemaUid, deployer } = await deployFixture()
+      await expect(
+        new VeriSkillCredential__factory(deployer).deploy(
+          ethers.ZeroAddress,
+          await eas.getAddress(),
+          schemaUid,
+        ),
+      ).to.be.revertedWith('VeriSkill: admin cannot be zero address')
     })
   })
 
@@ -622,8 +660,9 @@ describe('VeriSkillCredential', () => {
         console.log(`  only if measurements justify the correctness tradeoff.\n`)
       }
 
-      // Our implementation must be strictly cheaper than the naive reference
-      expect(vsGas).to.be.lt(refGas, 'VeriSkillCredential must use less gas than naive reference')
+      // Post-EAS budget: mintCredential also calls eas.attest(), so it will always
+      // cost more than the naive reference. Guard against regression above the budget.
+      expect(vsGas).to.be.lt(500_000n, 'mintCredential (incl. eas.attest) must stay under 500k gas')
     })
 
     it('MEASUREMENT — updateLayer gas (must be < 50,000)', async () => {
@@ -634,12 +673,13 @@ describe('VeriSkillCredential', () => {
       expect(receipt.gasUsed).to.be.lt(50_000n)
     })
 
-    it('MEASUREMENT — revokeCredential gas (must be < 50,000)', async () => {
+    it('MEASUREMENT — revokeCredential gas (must be < 120,000)', async () => {
       const { contract, admin, tokenId } = await deployAndMintFixture()
       const tx = await contract.connect(admin).revokeCredential(tokenId)
       const receipt = await tx.wait() as ContractTransactionReceipt
       console.log(`\n  revokeCredential gas used: ${receipt.gasUsed} gas`)
-      expect(receipt.gasUsed).to.be.lt(50_000n)
+      // Includes eas.revoke(). Non-EAS packed-slot ops (update/suspend) still fit under 50k.
+      expect(receipt.gasUsed).to.be.lt(120_000n)
     })
 
     it('MEASUREMENT — suspendCredential gas (must be < 50,000)', async () => {
