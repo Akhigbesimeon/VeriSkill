@@ -5,7 +5,7 @@ services:
     region: frankfurt
     plan: free
     rootDir: .
-    buildCommand: npm install --include=dev && npm run build --workspace=apps/backend
+    buildCommand: npm install --include=dev && npm run build --workspace=packages/shared && npm run build --workspace=apps/backend
     startCommand: npm run start --workspace=apps/backend
     healthCheckPath: /health
     autoDeploy: true
@@ -21,7 +21,7 @@ services:
     region: frankfurt
     plan: free
     rootDir: .
-    buildCommand: npm install --include=dev && npm run build --workspace=apps/backend
+    buildCommand: npm install --include=dev && npm run build --workspace=packages/shared && npm run build --workspace=apps/backend
     startCommand: npm run start:worker --workspace=apps/backend
     autoDeploy: true
     envVars:
