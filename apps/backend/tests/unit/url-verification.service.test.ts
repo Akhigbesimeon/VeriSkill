@@ -1,4 +1,16 @@
-import { describe, it, expect } from '@jest/globals'
+import { describe, it, expect, jest } from '@jest/globals'
+
+// checkVerifiableCredential is a pure parser, but url-verification.service
+// pulls in env (process.exit on missing vars), sequelize-backed models and
+// trust-score.service at module load. Stub them so the module can import.
+jest.mock('../../src/config/env', () => ({ env: {} }))
+jest.mock('../../src/config/sequelize', () => ({ __esModule: true, default: {} }))
+jest.mock('../../src/models/EvidenceUrl', () => ({ EvidenceUrl: {} }))
+jest.mock('../../src/models/Provider', () => ({ Provider: {} }))
+jest.mock('../../src/services/trust-score.service', () => ({
+  calculateTrustScore: jest.fn(),
+}))
+
 import { checkVerifiableCredential } from '../../src/services/url-verification.service'
 
 describe('checkVerifiableCredential', () => {

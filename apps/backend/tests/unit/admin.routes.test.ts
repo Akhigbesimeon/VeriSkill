@@ -81,6 +81,17 @@ jest.mock('../../src/services/blockchain.service', () => ({
   revokeOnChain: jest.fn(async () => undefined),
 }))
 
+// Short-circuit trust-score + expert-review services: their real modules load
+// unmocked models (EvidenceUrl, GithubScan, ExpertReview, TrustScoreHistory)
+// which call Model.init() against the mocked sequelize `{}` and blow up. No
+// test case here hits /credentials/:id/recompute, the only caller.
+jest.mock('../../src/services/trust-score.service', () => ({
+  calculateTrustScore: jest.fn(async () => ({ score: 0, layer: 0 })),
+}))
+jest.mock('../../src/services/expert-review.service', () => ({
+  assignExpertReviewers: jest.fn(async () => undefined),
+}))
+
 // ─── App setup ──────────────────────────────────────────────────────────────
 
 function makeApp() {
