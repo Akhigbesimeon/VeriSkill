@@ -2,16 +2,19 @@ import './config/env' // Validate env vars before anything else
 import app from './app'
 import { env } from './config/env'
 import { sequelize } from './models'
-import { initQueues, closeQueues } from './jobs/queues'
+import { initQueues, closeQueues, registerWorkers } from './jobs/queues'
 
 async function start() {
   // Verify database connection
   await sequelize.authenticate()
   console.log('✓ Database connected')
 
-  // Initialise job queues (Bull + Redis)
+  // Initialise job queues (BullMQ + Redis). On Render free tier we also run
+  // the workers in-process to avoid the paid Background Worker service — the
+  // separate worker.ts is kept so this can be split out later without a rewrite.
   await initQueues()
-  console.log('✓ Job queues initialised')
+  registerWorkers()
+  console.log('✓ Job queues initialised + workers registered (in-process)')
 
   const server = app.listen(env.PORT, () => {
     console.log(`✓ VeriSkill API running on port ${env.PORT} [${env.NODE_ENV}]`)
