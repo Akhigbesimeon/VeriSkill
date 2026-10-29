@@ -44,11 +44,12 @@ The system calculates a dynamic Trust Score based on the completion of the verif
 
 ## Tech Stack
 
-* **Smart Contracts:** Solidity ^0.8.20, Yul Assembly, Hardhat, OpenZeppelin, Ethers.js
-* **Backend:** Node.js, Express.js, PostgreSQL, Sequelize (ORM), Web3.js, JWT
-* **Web Frontend:** Next.js 14 (App Router), TypeScript, Chakra UI, TanStack Query
-* **Mobile App:** Expo React Native
-* **Infrastructure:** Vercel, AWS EC2/Heroku, AWS RDS (PostgreSQL)
+* **Smart Contracts:** Solidity ^0.8.24, Hardhat, OpenZeppelin AccessControl + ERC721, Ethereum Attestation Service (EAS), Ethers v6, TypeChain
+* **Backend:** Node.js, Express, PostgreSQL, Sequelize (ORM), Ethers v6, JWT, Bull (Redis-backed job queues)
+* **Web Frontend:** Vite + React, TypeScript, React Router, CSS Modules, Zustand, TanStack Query, Zod, Axios
+* **Mobile App:** Expo (React Native) with Expo Router
+* **Current pilot deploy:** Render.com — a `veriskill-backend` web service and a `veriskill-worker` background worker, both defined in `render.yaml`
+* **Target infrastructure (planned):** Vercel for the web app, AWS EC2 / Heroku for the API, AWS RDS for PostgreSQL, EAS Build for the mobile binary
 
 ## Project Structure
 
@@ -56,121 +57,112 @@ The system calculates a dynamic Trust Score based on the completion of the verif
 veriskill/
 │
 ├── apps/
-│   ├── web/                        # Developer-facing web application
+│   ├── web/                        # Developer-facing web app (Vite + React)
 │   │   ├── src/
-│   │   │   ├── assets/             # Static assets (icons, images)
-│   │   │   ├── components/         # Shared UI components
-│   │   │   ├── features/           # Feature-scoped modules
-│   │   │   │   ├── auth/
-│   │   │   │   ├── credentials/
-│   │   │   │   ├── evidence/
-│   │   │   │   ├── profile/
-│   │   │   │   ├── verification/
+│   │   │   ├── components/         # UI primitives, layout, wallet widgets
+│   │   │   │   ├── layout/
+│   │   │   │   ├── ui/
 │   │   │   │   └── wallet/
 │   │   │   ├── hooks/              # Custom React hooks
-│   │   │   ├── lib/                # API client, utility functions
-│   │   │   ├── pages/              # Route-level page components
-│   │   │   ├── stores/             # Zustand state stores
+│   │   │   ├── lib/                # API client, formatters, credential helpers
+│   │   │   ├── pages/              # Route components (React Router) + co-located CSS modules
+│   │   │   ├── store/              # Zustand stores
 │   │   │   ├── styles/             # Global styles, design tokens
-│   │   │   └── types/              # Web-app-specific types
+│   │   │   ├── App.tsx
+│   │   │   ├── main.tsx
+│   │   │   └── index.css
 │   │   ├── public/
 │   │   ├── index.html
 │   │   ├── vite.config.ts
+│   │   ├── vercel.json
 │   │   ├── tsconfig.json
+│   │   ├── .env.example
 │   │   └── package.json
 │   │
-│   ├── mobile/                     # Recruiter-facing mobile application
+│   ├── mobile/                     # Recruiter-facing app (Expo + Expo Router)
+│   │   ├── app/                    # File-based routes
+│   │   │   ├── (app)/
+│   │   │   ├── (auth)/
+│   │   │   ├── _layout.tsx
+│   │   │   └── index.tsx
 │   │   ├── src/
-│   │   │   ├── components/         # Shared mobile UI components
-│   │   │   ├── features/
-│   │   │   │   ├── auth/
-│   │   │   │   ├── scanner/
-│   │   │   │   └── verification/
-│   │   │   ├── hooks/
+│   │   │   ├── components/
 │   │   │   ├── lib/
-│   │   │   ├── navigation/         # Expo Router configuration
-│   │   │   ├── screens/            # Screen-level components
 │   │   │   ├── stores/
-│   │   │   └── types/
-│   │   ├── app/                    # Expo Router file-based routes
-│   │   ├── assets/
+│   │   │   └── theme/
 │   │   ├── app.json
 │   │   ├── tsconfig.json
 │   │   └── package.json
 │   │
-│   └── backend/                    # API server and verification engine
+│   └── backend/                    # API server + verification engine
 │       ├── src/
-│       │   ├── config/             # Environment config, database config
-│       │   ├── controllers/        # Express route controllers
-│       │   ├── middleware/         # Auth, validation, rate-limit, error
-│       │   ├── models/             # Sequelize models
+│       │   ├── config/             # Env schema (Zod), Sequelize config
+│       │   ├── middleware/         # auth, error, logger
 │       │   ├── migrations/         # Sequelize migrations
-│       │   ├── routes/             # Express router definitions
-│       │   ├── services/           # Business logic
-│       │   │   ├── auth/
-│       │   │   ├── blockchain/     # Contract interaction
-│       │   │   ├── credentials/
-│       │   │   ├── evidence/
-│       │   │   │   ├── url/        # URL verification pipeline
-│       │   │   │   └── github/     # GitHub scanning
-│       │   │   ├── peer-review/
-│       │   │   ├── trust-score/    # Score calculation engine
-│       │   │   └── notifications/
-│       │   ├── jobs/               # Async job definitions (Bull)
-│       │   ├── workers/            # Job queue workers
-│       │   ├── utils/
-│       │   └── types/
+│       │   ├── models/             # Sequelize models (User, Credential, …)
+│       │   ├── routes/             # Express routers (admin, auth, credential, …)
+│       │   ├── services/           # Business logic (flat `*.service.ts` files)
+│       │   │   ├── auth.service.ts
+│       │   │   ├── blockchain.service.ts
+│       │   │   ├── credential.service.ts
+│       │   │   ├── expert-review.service.ts
+│       │   │   ├── github-scan.service.ts
+│       │   │   ├── mailer.service.ts
+│       │   │   ├── peer-review.service.ts
+│       │   │   ├── trust-score.service.ts
+│       │   │   └── url-verification.service.ts
+│       │   ├── jobs/               # Bull queue definitions
+│       │   ├── seeders/            # Sequelize seeders
+│       │   ├── types/              # Express request augmentations
+│       │   ├── app.ts              # Express app wiring
+│       │   ├── server.ts           # API process entry
+│       │   └── worker.ts           # Separate worker process entry
+│       ├── sql/                    # Out-of-band SQL (e.g. supabase-cron.sql)
 │       ├── tests/
 │       │   ├── unit/
-│       │   ├── integration/
-│       │   └── fixtures/
+│       │   └── integration/        # Mint-flow end-to-end test
+│       ├── jest.config.js
 │       ├── tsconfig.json
 │       └── package.json
 │
 ├── packages/
-│   ├── contracts/                  # Smart contract workspace
+│   ├── contracts/                  # Hardhat workspace
 │   │   ├── contracts/
-│   │   │   └── VeriSkillCredential.sol
+│   │   │   ├── VeriSkillCredential.sol   # Soulbound credential (production)
+│   │   │   ├── ReferenceERC721.sol       # Naive baseline for gas benchmark
+│   │   │   └── VeriSkillResolver.sol
 │   │   ├── test/
-│   │   │   └── VeriSkillCredential.test.ts
-│   │   ├── scripts/
-│   │   │   ├── deploy.ts
-│   │   │   └── verify.ts
-│   │   ├── artifacts/              # Compiled ABI and bytecode (gitignored)
+│   │   │   ├── VeriSkillCredential.test.ts
+│   │   │   └── GasBenchmark.test.ts
+│   │   ├── scripts/                # deploy.ts, verify.ts
 │   │   ├── deployments/            # Deployment records per network
-│   │   │   ├── localhost.json
-│   │   │   └── testnet.json        # Added when testnet deploy happens
+│   │   ├── typechain-types/        # Generated contract typings
+│   │   ├── artifacts/              # Compiled ABI + bytecode (gitignored)
 │   │   ├── hardhat.config.ts
 │   │   ├── tsconfig.json
 │   │   └── package.json
 │   │
-│   └── shared/                     # Shared across all apps
+│   └── shared/                     # Code shared across workspaces
 │       ├── src/
-│       │   ├── types/              # TypeScript types shared across apps
-│       │   │   ├── credential.ts
-│       │   │   ├── user.ts
-│       │   │   ├── verification.ts
-│       │   │   └── trust-score.ts
 │       │   ├── constants/
-│       │   │   ├── skills.ts       # Eight approved MVP skills
+│       │   │   ├── skills.ts       # 23 approved skills (matches DB enum)
 │       │   │   ├── layers.ts       # Six verification layers
-│       │   │   └── providers.ts    # Tier 1 provider list
-│       │   ├── schemas/            # Zod validation schemas
-│       │   └── abi/                # Exported contract ABI
+│       │   │   └── providers.ts    # Tier-1 provider list
+│       │   ├── schemas/            # Zod validation schemas (types inferred via `z.infer`)
+│       │   ├── abi/                # Contract ABI exported by the deploy script
+│       │   └── index.ts            # Barrel export
 │       ├── tsconfig.json
 │       └── package.json
 │
-├── .github/
-│   └── workflows/
-│       ├── contracts-test.yml      # Run contract tests on PR
-│       ├── backend-test.yml        # Run backend tests on PR
-│       └── lint.yml                # Lint all packages on PR
+├── docs/
+│   └── KEY_ROTATION.md             # Issuer-key rotation procedure
 │
-├── .env.example                    # All required env vars documented
+├── render.yaml                     # Render deploy spec (API + worker)
+├── .env.example                    # Root env template
 ├── .gitignore
-├── .eslintrc.js                    # Root ESLint config
+├── .eslintrc.js
 ├── .prettierrc
-├── package.json                    # Root workspace definition
+├── package.json                    # npm workspaces root
 └── README.md
 ```
 ## Smart Contracts Architecture
@@ -250,40 +242,44 @@ git clone https://github.com/yourusername/veriskill.git
 cd veriskill
 ```
 
+The repo is an npm workspaces monorepo — run `npm install` once at the root to install every workspace, then start each process from its own directory. All services read environment variables from the **root `.env`**, which you create by copying `.env.example` at the repo root.
+
+```bash
+cp .env.example .env
+npm install
+```
+
 ### 2. Smart Contract Setup
 
 ```bash
 cd packages/contracts
-npm install
-# Create a .env file and add your testnet RPC URL and private key
-cp .env.example .env
-# Compile contracts
+# Compile contracts (uses the root .env for RPC_URL / keys)
 npx hardhat compile
-# Run local node
+# Start a local node in another terminal
 npx hardhat node
+# Deploy to the running local node
+npx hardhat run scripts/deploy.ts --network localhost
 ```
 
 ### 3. Backend Setup
 
 ```bash
-cd ../../apps/backend
-npm install
-# Configure your .env file with DB credentials, JWT secret, GitHub API (Octokit) key, and RPC URL
-cp .env.example .env
-# Run database migrations
+cd apps/backend
+# Run database migrations against the DB configured in the root .env
 npx sequelize-cli db:migrate
-# Start the backend server
+# Start the API process
 npm run dev
+# In a second terminal, start the queue worker process
+npm run dev:worker
 ```
 
-### 4. Web Application (Next.js) Setup
+### 4. Web Application Setup
 
 ```bash
-cd ../web
-npm install
-# Configure .env with the Backend API URL
-cp .env.local.example .env.local
-# Start the web development server
+cd apps/web
+# The web app has its own .env.example — copy it for client-side vars (API URL etc.)
+cp .env.example .env.local
+# Start the Vite dev server
 npm run dev
 ```
 
@@ -300,42 +296,57 @@ Scan the QR code generated in the terminal using the Expo Go app on your physica
 
 ## Deployment Plan
 
-The deployment of VeriSkill is divided across multiple specialized hosting environments to ensure scalability and cost-effectiveness.
+The pilot runs on a single provider (Render.com) to keep operations simple while the project is still validating product-market fit in Kigali. The multi-cloud plan below describes the **target architecture** once the project graduates from pilot to production.
 
-### Phase 1: Database Deployment
+### Current pilot deploy (Render.com)
 
-* **Platform:** AWS RDS (Relational Database Service)
-* **Action:** Provision a managed PostgreSQL instance. Secure the database within a VPC and whitelist the backend server IP addresses.
+Everything the backend needs ships via `render.yaml` at the repo root:
 
-### Phase 2: Smart Contract Deployment
+* `veriskill-backend` — Node web service in `frankfurt`, auto-deploys from `main`, exposes `/health`.
+* `veriskill-worker` — Separate background worker running `start:worker`, so a worker crash cannot take the API down.
+* Both services share the same build command (`npm run build --workspace=apps/backend`) and read the same env vars (DB URL, RPC URL, `ISSUER_PRIVATE_KEY`, etc.).
 
-* **Platform:** Ethereum Testnet (e.g., Sepolia) / Mainnet
+The web app and mobile app are not currently deployed under `render.yaml`; the web app runs locally against the deployed backend during the pilot.
+
+### Planned (target) architecture
+
+#### Phase 1: Database
+
+* **Platform:** AWS RDS (managed PostgreSQL)
+* **Action:** Provision a managed instance, secure it in a VPC, whitelist the backend egress IPs. Migration from the pilot DB is a `pg_dump` / `pg_restore` cutover during a maintenance window.
+
+#### Phase 2: Smart Contract Deployment
+
+* **Platform:** Ethereum testnet (Sepolia) → mainnet
 * **Action:**
-  1. Run unit tests and gas optimization benchmarks using Hardhat.
-  2. Deploy the Yul-optimized Soulbound Token (SBT) contracts to the testnet.
-  3. Verify the contracts on Etherscan for transparency.
-  4. Update the contract addresses and ABIs in the Backend and Web application environment variables.
+  1. Run unit tests and gas benchmarks (`GasBenchmark.test.ts`) under Hardhat.
+  2. Deploy `VeriSkillCredential` to the testnet via `scripts/deploy.ts`.
+  3. Verify on Etherscan for transparency.
+  4. Update `CONTRACT_ADDRESS` in backend/web env and copy the ABI into `packages/shared/src/abi/`.
 
-### Phase 3: Backend API Deployment
+#### Phase 3: Backend API
 
-* **Platform:** AWS EC2 or Heroku
+* **Platform:** AWS EC2 (or Heroku) behind a load balancer
 * **Action:**
-  1. Containerize the Node.js/Express application using Docker.
-  2. Deploy the container to the hosting provider.
-  3. Set up environment variables (DB strings, Smart Contract addresses, Web3 RPCs, GitHub API keys).
-  4. Ensure the API is served over HTTPS using SSL certificates.
+  1. Containerise the Express app (Dockerfile is a future deliverable, not in-tree yet).
+  2. Deploy behind HTTPS with managed certificates.
+  3. Promote the worker to its own autoscaling group so job spikes don't contend with API capacity.
 
-### Phase 4: Web Application Deployment
+#### Phase 4: Web Application
 
-* **Platform:** Vercel
+* **Platform:** Vercel (static + serverless)
 * **Action:**
-  1. Connect the Next.js GitHub repository to Vercel.
-  2. Configure build commands and environment variables linking to the live Backend API.
-  3. Deploy the application, enabling automated CI/CD for future commits to the `main` branch.
+  1. Connect the GitHub repo and configure the Vite build (`npm run build --workspace=apps/web`, output `dist/`).
+  2. Set `VITE_API_URL` and other client env vars.
+  3. Enable preview deploys per PR.
 
-### Phase 5: Mobile Application Deployment
+#### Phase 5: Mobile Application
 
 * **Platform:** Expo Application Services (EAS)
 * **Action:**
-  1. Build the Android (`.apk` / `.aab`) and iOS applications using EAS Build.
-  2. Distribute the app to internal testers (the 5 local technical recruiters in Kigali) using EAS Submit or TestFlight/Google Play Console internal tracks.
+  1. `eas build` the Android (`.apk` / `.aab`) and iOS binaries.
+  2. Distribute to the five pilot recruiters via internal tracks (TestFlight / Play Console internal testing).
+
+### Operations
+
+* **Issuer-key rotation:** see [`docs/KEY_ROTATION.md`](docs/KEY_ROTATION.md). Covers both scheduled and emergency rotation against `ISSUER_ROLE` on the deployed contract.
