@@ -39,7 +39,7 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
-        name="verify/index"
+        name="verify"
         options={{
           title: 'Scan',
           tabBarLabel: 'Scan',
@@ -64,7 +64,6 @@ export default function AppLayout() {
         }}
       />
       {/* Hidden screens (no tab) */}
-      <Tabs.Screen name="verify/[id]"      options={{ href: null, title: 'Verification' }} />
       <Tabs.Screen name="settings"         options={{ href: null, title: 'Settings' }} />
       <Tabs.Screen name="search"           options={{ href: null, title: 'Search candidates' }} />
       <Tabs.Screen name="edit-profile"     options={{ href: null, title: 'Edit profile' }} />
