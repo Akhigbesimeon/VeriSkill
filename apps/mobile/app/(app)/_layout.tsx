@@ -1,5 +1,5 @@
 import { Tabs, Redirect, Link } from 'expo-router'
-import { ColorValue, TouchableOpacity } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '@/stores/auth.store'
 import { colors, typography } from '@/theme/tokens'
@@ -7,8 +7,8 @@ import { colors, typography } from '@/theme/tokens'
 type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 
 function icon(name: IoniconName, focusedName: IoniconName) {
-  return ({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) => (
-    <Ionicons name={focused ? focusedName : name} size={size} color={color} />
+  return ({ focused, color, size }: { focused: boolean; color: unknown; size: number }) => (
+    <Ionicons name={focused ? focusedName : name} size={size} color={typeof color === 'string' ? color : undefined} />
   )
 }
 

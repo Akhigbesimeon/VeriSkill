@@ -1,7 +1,7 @@
 import { View, TextInput, TextInputProps, StyleSheet } from 'react-native'
 import { Text } from './Text'
 import { colors, spacing, radius, typography } from '@/theme/tokens'
-import { forwardRef } from 'react'
+import { ElementRef, forwardRef } from 'react'
 
 interface InputProps extends TextInputProps {
   label: string
@@ -9,7 +9,7 @@ interface InputProps extends TextInputProps {
   hint?: string
 }
 
-export const Input = forwardRef<TextInput, InputProps>(
+export const Input = forwardRef<ElementRef<typeof TextInput>, InputProps>(
   ({ label, error, hint, style, ...rest }, ref) => {
     return (
       <View style={styles.field}>

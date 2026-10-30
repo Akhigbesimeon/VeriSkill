@@ -33,7 +33,9 @@
           "cameraPermission": "VeriSkill uses the camera to scan credential QR codes."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-font",
+      "expo-status-bar"
     ],
     "scheme": "veriskill",
     "extra": {

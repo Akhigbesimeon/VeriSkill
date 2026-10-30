@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { ElementRef, useRef, useState } from 'react'
 import {
   View, ScrollView, StyleSheet, TouchableOpacity,
   useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent,
@@ -63,7 +63,7 @@ const SLIDES: Slide[] = [
 export default function OnboardingScreen() {
   const { width } = useWindowDimensions()
   const [index, setIndex] = useState(0)
-  const scrollRef = useRef<ScrollView>(null)
+  const scrollRef = useRef<ElementRef<typeof ScrollView>>(null)
   const router = useRouter()
 
   const onMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
