@@ -2,7 +2,14 @@
 
 **VeriSkill** is a gas-optimized blockchain credentialing protocol designed specifically for self-taught developers in Sub-Saharan Africa (starting with Kigali, Rwanda). This project aims to bridge the gap between untappped digital talent and employment opportunities by providing a scalable, affordable, and instantly verifiable credentialing system.
 
-This project is based on the research and architectural design outlined in the proposal document: **Akhigbe Simeon_VeriSkill_Proposal_mission Capstone.docx.pdf**.
+## Technical Report
+https://docs.google.com/document/d/1gQpLK8-hBcd5Wqkd7nOjYxKkEOTuM0TxYw7MYddSKhQ/edit?usp=sharing
+
+## Demo Video link 
+https://drive.google.com/drive/folders/1UFPtMPk62hOIdYH7tRyplDnmSy5D4yUr?usp=sharing
+
+## VeriSkill Evidence (Screenshots)
+https://drive.google.com/drive/folders/11lCx1o6-KT_Y6Ds2GChPHuoOXjs4e00u?usp=sharing
 
 ## Project Description
 
@@ -181,47 +188,6 @@ VeriSkill utilizes two distinct smart contracts during its development and testi
 **Functionality:** This is a naive reference implementation designed strictly for testing and gas comparison against `VeriSkillCredential`. **It is not used in production.**
 * **Purpose:** Acts as a baseline to empirically prove the minimum 30% gas reduction requirement targeted by the project.
 * **Mechanism:** It intentionally uses separate `mapping(uint256 => uint256)` data structures for every single variable (Layer, Status, IssuedAt, etc.). This mimics a standard, unoptimized smart contract, requiring 7 expensive cold-storage writes during minting, compared to VeriSkill's 4.
-
-## VeriSkillCredential Smart Contract Code Snippets 
-
-* **Enforcing the Soulbound Standard**
-<img width="959" height="505" alt="Image" src="https://github.com/user-attachments/assets/a4cd9c83-3dc3-436f-847a-808f48bb1eeb" />
-
-* **Low-Level Gas Optimization (The 30% Benchmark)**
-<img width="959" height="283" alt="Image" src="https://github.com/user-attachments/assets/872e6d04-061a-4656-a873-892a39958e13" />
-
-<img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/e2dbf40b-f629-4a1c-a7b5-0df1399fd4a0" />
-
-* **Cryptographic Commitments & Privacy**
-<img width="959" height="504" alt="Image" src="https://github.com/user-attachments/assets/524fa54e-89ae-4ce2-9231-867679fed50b" />
-
-* **Access Control & Lifecycle Management**
-<img width="959" height="504" alt="Image" src="https://github.com/user-attachments/assets/0aea3a74-fdca-4bc0-a44e-55de6710b8d7" />
-
-<img width="959" height="505" alt="Image" src="https://github.com/user-attachments/assets/0ff01600-fe0a-4dbc-bc60-81c354a7950e" />
-
-## VeriSkillCredential Smart Contract Test Result (68 Passing)
-
-<img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/90404eaf-73ee-416d-969b-19625c7b083f" />
-
-<img width="959" height="502" alt="Image" src="https://github.com/user-attachments/assets/bb68df52-d6eb-481a-b0b6-f51f61a3665a" />
-
-<img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/e0a71904-d573-430a-83ed-2d0949179146" />
-
-<img width="959" height="503" alt="Image" src="https://github.com/user-attachments/assets/64e52242-425d-475f-b5ee-a25d8bae00dd" />
-
-<img width="958" height="504" alt="Image" src="https://github.com/user-attachments/assets/7fc96263-933a-4cca-9c3c-bc8af3c72244" />
-
-## Data visualization
-### 1. Transaction & Commitment Graph (VeriSkill Minting Flow)
-This structural graph visualizes how raw off-chain transaction data is organized, hashed, and securely recorded into a block using cryptographic linking. A Merkle Tree data structure produces a single digital fingerprint of all transactions within a block to efficiently verify integrity. In the context of your capstone, this maps the generation of the `commitHash` and its anchoring to the blockchain ledger.
-
-<img width="860" height="890" alt="Image" src="https://github.com/user-attachments/assets/a626f9fd-f32d-479a-b21a-1dc89d48d13c" />
-
-### 2. Consensus Algorithm Flow (Block Validation)
-Consensus mechanisms allow network participants to agree on a valid transaction ledger despite potential adversarial actions or node failures. For EVM-compatible networks, Proof of Stake (PoS) algorithms randomly assign validators based on their stake value to propose and validate new blocks.
-
-<img width="860" height="1179" alt="Image" src="https://github.com/user-attachments/assets/75952812-6ca7-47a7-804c-e3d9464fb663" />
 
 ## Environment Setup and Installation
 
