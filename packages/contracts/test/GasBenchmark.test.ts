@@ -6,6 +6,7 @@ import {
   VeriSkillCredential__factory,
   VeriSkillResolver__factory,
   ReferenceERC721__factory,
+  PackedERC721__factory,
   EAS__factory,
   SchemaRegistry__factory,
 } from '../typechain-types'
@@ -207,6 +208,51 @@ describe('FR02 — Gas benchmark: VeriSkillCredential vs ReferenceERC721', () =>
     expect(revokeGas).to.be.greaterThan(0n)
   })
 
-  // Keep lint happy for the unused helper in Phase A.
-  void pct
+  it('fair comparison: packed storage vs naive ERC-721 (same metadata, no EAS)', async function () {
+    this.timeout(60_000)
+
+    const [deployer, , , developer] = await ethers.getSigners()
+
+    const ref = await new ReferenceERC721__factory(deployer).deploy()
+    await ref.waitForDeployment()
+
+    const packed = await new PackedERC721__factory(deployer).deploy()
+    await packed.waitForDeployment()
+
+    const refGas: bigint[] = []
+    const packedGas: bigint[] = []
+
+    for (let i = 0; i < 3; i++) {
+      const skillId = makeSkillId(`fair-${i}`)
+      const commit = makeCommitHash(200 + i)
+      refGas.push(await gasOf(ref.mint(developer.address, skillId, commit, 4)))
+      packedGas.push(await gasOf(packed.mint(developer.address, skillId, commit, 4)))
+    }
+
+    const refWarm = refGas[2]
+    const packedWarm = packedGas[2]
+    const saved = refWarm - packedWarm
+    const percent = pct(saved, refWarm)
+
+    // eslint-disable-next-line no-console
+    console.log(`
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │ FR02 — Apples-to-apples: packed vs naive (same metadata, no EAS)     │
+    ├──────────────────────────────────────────────────────────────────────┤
+    │ ReferenceERC721 (6 unpacked slots):                                  │
+    │   cold:  ${refGas[0].toString().padStart(8)} gas                                     │
+    │   warm2: ${refGas[1].toString().padStart(8)} gas                                     │
+    │   warm3: ${refGas[2].toString().padStart(8)} gas  <- reported                        │
+    │                                                                      │
+    │ PackedERC721 (3 packed slots, VSC-style layout, no EAS):             │
+    │   cold:  ${packedGas[0].toString().padStart(8)} gas                                     │
+    │   warm2: ${packedGas[1].toString().padStart(8)} gas                                     │
+    │   warm3: ${packedGas[2].toString().padStart(8)} gas  <- reported                        │
+    │                                                                      │
+    │ Saved per mint:              ${saved.toString().padStart(8)} gas                        │
+    │ Reduction vs naive ERC-721:  ${percent.padEnd(8)}                            │
+    └──────────────────────────────────────────────────────────────────────┘`)
+
+    expect(packedWarm).to.be.lessThan(refWarm)
+  })
 })
