@@ -39,7 +39,7 @@
 .tableWrapper { composes: tableWrapper from '../styles/tables.module.css'; }
 .table        { composes: table from '../styles/tables.module.css'; }
 
-.devCell { display: flex; flex-direction: column; gap: 2px; }
+.devCell { }
 .devName { font-weight: var(--font-weight-semibold); color: var(--color-text-primary); letter-spacing: var(--tracking-snug); }
 .skillCell { font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-snug); }
 .scoreCell { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }

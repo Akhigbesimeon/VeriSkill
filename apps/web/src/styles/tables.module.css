@@ -17,8 +17,8 @@
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
 }
-.table td { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--color-border); vertical-align: middle; height: 60px; }
+.table td { padding: var(--space-3) var(--space-5); border-bottom: 1px solid var(--color-border); vertical-align: middle; }
 .table tbody tr:last-child td { border-bottom: none; }
-.table tbody tr { transition: background-color var(--transition-fast); }
+.table tbody tr { height: 64px; transition: background-color var(--transition-fast); }
 .table tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--color-bg-tint) 40%, transparent); }
 .table tbody tr:hover td { background: var(--color-bg-tint); }
