@@ -21,8 +21,6 @@ Finally, the lifecycle numbers on an already-minted credential, since you have t
 
 These are all cheap for the same reason the mint was cheap. Once four facts share a compartment, touching that one compartment lets you change several of them at once.
 
----
-
 ## Appendix: raw benchmark output
 
 Measured on a local Hardhat node (EVM target: cancun), with `viaIR` enabled. Three mints per contract — the "warm" number (third mint) is the steady-state cost to report; the first mint has one-time setup noise.
@@ -31,60 +29,39 @@ Measured on a local Hardhat node (EVM target: cancun), with `viaIR` enabled. Thr
 
 This is the comparison that produces the headline 27% figure. Both contracts write the same six fields; only the storage layout differs.
 
-┌──────────────────────────────────────────────────────────────────────┐
-│ Apples-to-apples: packed vs naive (same metadata, no EAS)            │
-├──────────────────────────────────────────────────────────────────────┤
-│ ReferenceERC721 (6 unpacked slots):                                  │
-│   cold:    187539 gas                                                │
-│   warm2:   170439 gas                                                │
-│   warm3:   170439 gas  <- reported                                   │
-│                                                                      │
-│ PackedERC721 (3 packed slots, VSC-style layout, no EAS):             │
-│   cold:    141179 gas                                                │
-│   warm2:   124079 gas                                                │
-│   warm3:   124079 gas  <- reported                                   │
-│                                                                      │
-│ Saved per mint:              46360 gas                               │
-│ Reduction vs naive ERC-721:  27.20%                                  │
-└──────────────────────────────────────────────────────────────────────┘
+| Contract | Cold | Warm (mint 2) | Warm (mint 3, reported) |
+  |---|---:|---:|---:|
+  | ReferenceERC721 (6 unpacked slots) | 187,539 | 170,439 | **170,439** |
+  | PackedERC721 (3 packed slots, VSC layout, no EAS) | 141,179 | 124,079 | **124,079** |
+
+  **Saved per mint:** 46,360 gas
+  **Reduction vs naive ERC-721:** **27.20%**
 
 ### B. Full production contract vs naive baseline (includes EAS cost)
 
 For transparency. The production `VeriSkillCredential.mintCredential` additionally writes an EAS attestation, which the naive reference does not. This is why the raw production number is higher — the EAS attestation accounts for most of the +242,538 gas difference.
 
-┌──────────────────────────────────────────────────────────────────────┐
-│ Gas benchmark (warm mint, tokenId=3)                                 │
-├──────────────────────────────────────────────────────────────────────┤
-│ VeriSkillCredential.mintCredential (ERC721 + packed state + EAS):    │
-│   cold:    430077 gas                                                │
-│   warm2:   412965 gas                                                │
-│   warm3:   412977 gas  <- reported                                   │
-│                                                                      │
-│ ReferenceERC721.mint (ERC721 + 6 unpacked state slots, no EAS):      │
-│   cold:    187539 gas                                                │
-│   warm2:   170415 gas                                                │
-│   warm3:   170439 gas  <- reported                                   │
-│                                                                      │
-│ VSC - Reference (warm):   +242538 gas                                │
-│ On-paper storage savings: ~60,000 gas (3 cold SSTOREs @ 20k each)    │
-│ Residual = EAS attest cost that reference does not pay.              │
-└──────────────────────────────────────────────────────────────────────┘
+ | Contract | Cold | Warm (mint 2) | Warm (mint 3, reported) |
+  |---|---:|---:|---:|
+  | VeriSkillCredential (ERC-721 + packed state + EAS) | 430,077 | 412,965 | **412,977** |
+  | ReferenceERC721 (ERC-721 + 6 unpacked slots, no EAS) | 187,539 | 170,415 | **170,439** |
+
+  - VSC − Reference (warm): **+242,538 gas**
+  - On-paper storage savings: ~60,000 gas (3 cold SSTOREs @ 20,000 each)
+  - Residual = EAS attestation sub-call cost, which the reference does not pay.
 
 ### C. Lifecycle state-change operations on an already-minted credential
 
 Measured on the production contract. Non-revoke ops are a single storage read plus a single storage write on the packed slot. `revokeCredential` additionally calls `eas.revoke`, which is why it is more expensive.
 
-┌──────────────────────────────────────────────────────────────────────┐
-│ FR02 — State-change ops on packed struct                             │
-├──────────────────────────────────────────────────────────────────────┤
-│ updateLayer:           39982 gas  (no EAS)                           │
-│ suspendCredential:     33357 gas  (no EAS)                           │
-│ unsuspendCredential:   33329 gas  (no EAS)                           │
-│ revokeCredential:      95335 gas  (incl. eas.revoke)                 │
-│                                                                      │
-│ Each non-revoke op is a single SLOAD + single SSTORE on the packed   │
-│ slot 0 of the Credential struct.                                     │
-└──────────────────────────────────────────────────────────────────────┘
+| Operation | Gas | Notes |
+  |---|---:|---|
+  | `updateLayer` | 39,982 | No EAS call |
+  | `suspendCredential` | 33,357 | No EAS call |
+  | `unsuspendCredential` | 33,329 | No EAS call |
+  | `revokeCredential` | 95,335 | Includes `eas.revoke` sub-call |
+
+Each non-revoke op is a single SLOAD + single SSTORE on slot 0 of the `Credential` struct.
 
 ### Reproducibility
 
@@ -95,13 +72,12 @@ The three tables above are produced by three `it(...)` blocks in `test/GasBenchm
 
  #### Storage layout: the actual difference
 
-  <table>
-  <tr>
-  <th>ReferenceERC721 (naive — 6 slots)</th>
-  <th>PackedERC721 (optimized — 3 slots)</th>
-  </tr>
-  <tr>
-  <td>
+  Same six fields, same semantics. The naive version gives each field its own 32-byte slot (wasting 31 bytes on `_layer` and
+  `_status`, 27 bytes on each timestamp). The packed version declares them inside a struct, so Solidity places the four small
+  fields (`uint8 + uint8 + uint40 + uint40` = 12 bytes) side by side in one 32-byte slot, with `skillId` and `commitHash` getting
+   one slot each. That is where the three-slot saving comes from.
+
+  **ReferenceERC721 (naive — 6 slots):**
 
   ```solidity
   mapping(uint256 => uint256) private _layer;
@@ -110,7 +86,11 @@ The three tables above are produced by three `it(...)` blocks in `test/GasBenchm
   mapping(uint256 => uint256) private _updatedAt;
   mapping(uint256 => bytes32) private _skillId;
   mapping(uint256 => bytes32) private _commitHash;
+  ```
 
+  **PackedERC721 (optimized — 3 slots):**
+
+  ```solidity
   struct Credential {
       uint8   layer;
       uint8   status;
@@ -120,5 +100,4 @@ The three tables above are produced by three `it(...)` blocks in `test/GasBenchm
       bytes32 commitHash;
   }
   mapping(uint256 => Credential) private _credentials;
-
-Same six fields, same semantics. The naive version gives each field its own 32-byte slot (wasting 31 bytes on _layer and _status, 27 bytes on each timestamp). The packed version declares them inside a struct so Solidity places the four small fields (uint8 + uint8 + uint40 + uint40 = 12 bytes) side by side in a single 32-byte slot, with skillId and commitHash getting one slot each. That's where the three-slot saving comes from.
+  ```
