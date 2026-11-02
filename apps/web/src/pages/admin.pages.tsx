@@ -152,7 +152,7 @@ export function AdminCredentialsPage() {
     <div className={styles.page}>
       <PageHeader title="All Credentials" />
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div className={styles.toolbar}>
         <Button size="sm" variant="ghost" icon={<RefreshCw size={13} />} loading={isFetching} onClick={() => refetch()}>
           Refresh
         </Button>

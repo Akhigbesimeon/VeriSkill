@@ -44,7 +44,8 @@
 .skillCell { font-weight: var(--font-weight-semibold); letter-spacing: var(--tracking-snug); }
 .scoreCell { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
 .dateCell { color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
-.actionRow { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.actionRow { display: flex; gap: var(--space-2); justify-content: flex-end; flex-wrap: nowrap; }
+.toolbar { display: flex; justify-content: flex-end; }
 .code {
   font-size: var(--font-size-xs);
   background: var(--color-bg-tint);
