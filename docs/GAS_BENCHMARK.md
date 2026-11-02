@@ -23,7 +23,7 @@ These are all cheap for the same reason the mint was cheap. Once four facts shar
 
 ## Appendix: raw benchmark output
 
-Measured on a local Hardhat node (EVM target: cancun), with `viaIR` enabled. Three mints per contract — the "warm" number (third mint) is the steady-state cost to report; the first mint has one-time setup noise.
+Measured on a local Hardhat node (EVM target: cancun), with `viaIR` enabled. Three mints per contract; the "warm" number (third mint) is the steady-state cost to report; the first mint has one-time setup noise.
 
 ### A. Fair apples-to-apples: packed vs naive (same metadata, no EAS)
 
