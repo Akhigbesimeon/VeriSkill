@@ -265,6 +265,9 @@ export function OnboardingPage() {
       <footer className={styles.footer}>
         <span className={styles.footerCopy}>VeriSkill</span>
         <span className={styles.footerCopy}>Verifiable &middot; portable &middot; signed</span>
+        <span className={styles.footerCopy}>
+          <Link to="/privacy">Privacy</Link> &middot; <Link to="/contact">Contact</Link>
+        </span>
       </footer>
     </div>
   )

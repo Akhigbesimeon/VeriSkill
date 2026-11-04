@@ -21,7 +21,8 @@
       },
       "package": "com.veriskill.app",
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "plugins": [
@@ -39,7 +40,15 @@
     ],
     "scheme": "veriskill",
     "extra": {
-      "apiUrl": "http://localhost:4000/api/v1"
+      "apiUrl": "http://localhost:4000/api/v1",
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "65e52aec-c090-4393-b141-a846f8edae55"
+      }
     }
   }
 }

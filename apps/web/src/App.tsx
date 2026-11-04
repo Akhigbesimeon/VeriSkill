@@ -23,6 +23,8 @@ const AdminCredentialsPage = lazy(() => import('@/pages/admin.pages').then(m => 
 const AdminUsersPage       = lazy(() => import('@/pages/admin.pages').then(m => ({ default: m.AdminUsersPage })))
 const AdminAuditLogPage    = lazy(() => import('@/pages/admin.pages').then(m => ({ default: m.AdminAuditLogPage })))
 const ProfilePage        = lazy(() => import('@/pages/ProfilePage').then(m => ({ default: m.ProfilePage })))
+const PrivacyPage        = lazy(() => import('@/pages/PrivacyPage').then(m => ({ default: m.PrivacyPage })))
+const ContactPage        = lazy(() => import('@/pages/ContactPage').then(m => ({ default: m.ContactPage })))
 
 function PageFallback() {
   return (
@@ -114,6 +116,8 @@ export function App() {
         <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
         <Route path="/reset-password"   element={<ResetPasswordPage />} />
         <Route path="/verify/:id"       element={<PublicCredentialPage />} />
+        <Route path="/privacy"          element={<PrivacyPage />} />
+        <Route path="/contact"          element={<ContactPage />} />
 
         <Route
           path="/dashboard"
