@@ -49,7 +49,6 @@ export function NewCredentialPage() {
         <CardBody>
           <form onSubmit={handleSubmit} noValidate className={styles.form}>
             <fieldset className={styles.fieldset}>
-              <legend className={styles.legend}>Approved skills for the MVP pilot</legend>
               <div className={styles.grid}>
                 {SKILLS.map(s => (
                   <label key={s} className={[styles.skillCard, skill === s ? styles.skillSelected : ''].join(' ')}>
