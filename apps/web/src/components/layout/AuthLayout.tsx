@@ -19,7 +19,7 @@ export function AuthLayout({ children }: { children: ReactNode }) {
         </blockquote>
         <div className={styles.asideFooter}>
           <span className={styles.asideFooterLabel}>Field note</span>
-          <span>VeriSkill &mdash; verifiable skill</span>
+          <span>VeriSkill-verifiable skill</span>
         </div>
       </aside>
     </div>
