@@ -45,7 +45,7 @@ const LAYERS = [
 const DEVELOPER_POINTS = [
   'Own a portable, verifiable record of what you can actually do.',
   'Signed receipts that recruiters can trust without a referral chase.',
-  'Managed or self-custody wallet — no crypto expertise required.',
+  'Managed or self-custody wallet-no crypto expertise required.',
 ]
 
 const RECRUITER_POINTS = [
@@ -128,7 +128,7 @@ export function OnboardingPage() {
           </div>
 
           <div className={styles.heroMeta} aria-hidden>
-            <span>Wallet required &mdash; managed option available</span>
+            <span>Wallet required</span>
             <span>On-chain receipts, off-chain simplicity</span>
           </div>
         </div>
@@ -169,7 +169,7 @@ export function OnboardingPage() {
               Six layers of trust, stacked on evidence.
             </h2>
             <p className={styles.sectionLede}>
-              Each layer tightens the signal — from your own declaration to a signed expert audit. You move up as the evidence
+              Each layer tightens the signal, from your own declaration to a signed expert audit. You move up as the evidence
               and the people around you accumulate.
             </p>
           </header>
