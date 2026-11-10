@@ -5,11 +5,8 @@ import { env } from './env'
  * Shared Sequelize instance used by all models.
  * Imported by models/index.ts and the migration runner.
  *
- * Connection pooling:
- *   max: 3  — sized for Supabase free-tier Supavisor pooler (ADR-013)
- *   min: 0  — do not hold idle connections against the shared pooler
- *   idle: 10s — release idle connections promptly on free tier
- *   acquire: 60s — fail fast if pool is exhausted
+ * Pool sized against self-hosted Postgres (max_connections=30 on server),
+ * leaving headroom for migrations, workers, and backups.
  */
 const sequelize = new Sequelize(env.DATABASE_URL, {
   dialect: 'postgres',
@@ -19,7 +16,7 @@ const sequelize = new Sequelize(env.DATABASE_URL, {
       : false,
   },
   pool: {
-    max: 3,
+    max: 10,
     min: 0,
     idle: 10_000,
     acquire: 60_000,
