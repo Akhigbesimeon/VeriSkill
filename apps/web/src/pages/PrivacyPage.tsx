@@ -79,7 +79,7 @@ export function PrivacyPage() {
         <p style={pStyle}>
           Evidence URLs are fetched from the providers you link (for example Coursera or edX) to verify they resolve.
           GitHub repositories you submit are read through the GitHub API using a read-only token. Infrastructure
-          providers that process data on our behalf: Supabase (database), Render (API hosting) and Vercel (web hosting).
+          providers that process data on our behalf: Render (API hosting) and Vercel (web hosting). PostgreSQL hosted on a server.
         </p>
 
         <h2 style={h2Style}>Your rights</h2>
