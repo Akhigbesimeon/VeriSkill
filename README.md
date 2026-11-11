@@ -97,7 +97,7 @@ Lifecycle operations on an existing credential cost about 40,000 gas to update a
 | Backend | Node.js 20+, Express, PostgreSQL, Sequelize, Zod, JWT, BullMQ + Redis (job queues), MaxMind GeoIP2 (ASN lookup), GitHub GraphQL API |
 | Web app (developers) | Vite + React 19, TypeScript, React Router, Zustand, TanStack Query, Axios, CSS Modules |
 | Mobile app (recruiters) | Expo SDK 58, React Native 0.88, Expo Router, expo-camera, Zustand |
-| Deployment | Render (API and worker), Supabase (PostgreSQL), Vercel (web), EAS Build (mobile), Ethereum Sepolia |
+| Deployment | Render (API and worker), self-hosted PostgreSQL, Vercel (web), EAS Build (mobile), Ethereum Sepolia |
 
 ## Project structure
 
@@ -119,7 +119,6 @@ veriskill/
 │       │   ├── services/     # Business logic (trust score, scans, blockchain…)
 │       │   ├── server.ts     # API entry (registers queue workers in-process)
 │       │   └── worker.ts     # Standalone worker entry
-│       ├── sql/              # Supabase cron SQL
 │       └── tests/            # unit/ and integration/
 ├── packages/
 │   ├── contracts/   # Hardhat workspace: contracts, tests, deploy scripts
@@ -238,7 +237,7 @@ Contract tests cover minting, voucher minting, roles, soulbound transfer blockin
 | Component | Platform | Notes |
 | --------- | -------- | ----- |
 | API and worker | Render (`render.yaml`, Frankfurt) | Auto-deploys from `main`; health check at `/health` |
-| Database | Supabase | Use the pooled connection string for `DATABASE_URL` |
+| Database | Self-hosted PostgreSQL | Set `DATABASE_URL`; the pool uses up to 10 connections (server `max_connections` = 30) |
 | Contracts | Ethereum Sepolia | `npm run deploy:testnet`, then update `CONTRACT_ADDRESS` and copy the ABI to `packages/shared/src/abi/` |
 | Web app | Vercel | Build with `npm run build --workspace=apps/web`; output `dist/` |
 | Mobile app | EAS Build | Distributed to pilot recruiters through internal test tracks |

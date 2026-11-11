@@ -71,7 +71,7 @@ app.use('/api/v1/expert-reviews', expertReviewRouter)
 app.use('/api/v1/admin',        adminRouter)
 app.use('/api/v1/verify',       verifyRouter)
 
-// ─── Internal (pg_cron webhooks — ADR-016) ────────────────────────────────────
+// ─── Internal (cron jobs, manual trigger) ──────────────────────────────────────────
 // Not exposed via /api/v1 and not documented in docs/API.md on purpose.
 // Guarded by CRON_SECRET inside the router.
 app.use('/internal',            internalRouter)

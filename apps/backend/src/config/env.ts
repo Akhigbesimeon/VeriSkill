@@ -25,16 +25,16 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
 
   // Database
-  // DATABASE_URL — runtime pool (Supabase Supavisor pooler, port 6543)
-  // DATABASE_MIGRATION_URL — direct connection used by sequelize-cli (port 5432)
+  // DATABASE_URL — runtime connection to the self-hosted PostgreSQL server
+  // DATABASE_MIGRATION_URL — optional separate connection for sequelize-cli
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   DATABASE_SSL: z.string().transform(v => v === 'true').default('false'),
   DATABASE_TEST_URL: z.string().optional(),
   DATABASE_MIGRATION_URL: z.string().optional(),
 
   // Scheduled jobs
-  // Shared secret sent as `Authorization: Bearer <CRON_SECRET>` by
-  // Supabase pg_cron when it calls internal cron webhook endpoints (ADR-016).
+  // Shared secret required as `Authorization: Bearer <CRON_SECRET>` to run
+  // the internal cron endpoints by hand (node-cron runs them on schedule).
   CRON_SECRET: z.string().min(32, 'CRON_SECRET must be at least 32 characters'),
 
   // Authentication

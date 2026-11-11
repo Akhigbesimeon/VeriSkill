@@ -18,7 +18,7 @@ async function start() {
   registerWorkers()
   console.log('✓ Job queues initialised + workers registered (in-process)')
 
-  // In-process cron schedules (replaces former Supabase pg_cron webhooks).
+  // In-process cron schedules (node-cron).
   // UptimeRobot keeps the free-tier dyno warm, so in-process schedules fire reliably.
   const urlFreshnessTask = cron.schedule('0 2 1 * *', async () => {
     try {

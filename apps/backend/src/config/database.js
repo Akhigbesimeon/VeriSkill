@@ -3,9 +3,7 @@
  * This is a plain JS file (not TypeScript) so sequelize-cli can load it
  * directly without ts-node compilation.
  *
- * Migrations prefer DATABASE_MIGRATION_URL (direct 5432 connection) when set —
- * Supabase's Supavisor transaction pooler on port 6543 does not support the
- * long-running DDL + session-level state used by migrations (ADR-013).
+ * Migrations use DATABASE_MIGRATION_URL when set, otherwise DATABASE_URL.
  */
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../../../.env') })
 
