@@ -14,18 +14,11 @@
   width: 100%;
 }
 
-.topBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  margin-bottom: var(--space-10);
-}
-
 .brand {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
+  margin-bottom: var(--space-10);
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   color: var(--color-text-primary);
@@ -110,5 +103,5 @@
   .page { grid-template-columns: 1fr; }
   .aside { display: none; }
   .panel { padding: var(--space-10) var(--space-6) var(--space-8); max-width: 440px; }
-  .topBar { margin-bottom: var(--space-8); }
+  .brand { margin-bottom: var(--space-8); }
 }

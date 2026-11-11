@@ -1,16 +1,12 @@
 import styles from './AuthLayout.module.css'
 import { ReactNode } from 'react'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 export function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <div className={styles.page}>
       <div className={styles.panel}>
-        <div className={styles.topBar}>
-          <div className={styles.brand}>
-            <span>VeriSkill</span>
-          </div>
-          <ThemeToggle />
+        <div className={styles.brand}>
+          <span>VeriSkill</span>
         </div>
         {children}
       </div>

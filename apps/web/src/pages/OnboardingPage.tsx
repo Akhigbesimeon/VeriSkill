@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowRight, ShieldCheck, Users, Award, Scan, Fingerprint, BadgeCheck, Link2, Github, UsersRound } from 'lucide-react'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import styles from './OnboardingPage.module.css'
 
 const LAYERS = [
@@ -99,6 +100,7 @@ export function OnboardingPage() {
           <span>VeriSkill</span>
         </Link>
         <div className={styles.navActions}>
+          <ThemeToggle />
           <Link to="/login" className={styles.navLink}>Sign in</Link>
           <Link to="/register" className={styles.navCta}>Get started</Link>
         </div>
