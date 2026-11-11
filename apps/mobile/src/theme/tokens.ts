@@ -1,7 +1,10 @@
 // Design tokens — mirror the web CSS custom properties; single source of
-// truth for the mobile visual identity.
+// truth for the mobile visual identity. Colors are theme-aware; everything
+// else (spacing/radius/typography/shadow) is scheme-independent.
 
-export const colors = {
+export type ColorScheme = 'light' | 'dark'
+
+export const lightColors = {
   bg:           '#f6f6f3',
   surface:      '#fcfbf8',
   surface2:     '#ececea',
@@ -27,6 +30,46 @@ export const colors = {
   info:          '#3458a2',
   infoSubtle:    '#ecf0f8',
 } as const
+
+export const darkColors: Record<keyof typeof lightColors, string> = {
+  bg:           '#0f0f12',
+  surface:      '#1a1a21',
+  surface2:     '#22222a',
+  border:       '#2b2b34',
+  borderStrong: '#3a3a46',
+  borderFocus:  '#8d85f0',
+
+  textPrimary:   '#ededf1',
+  textSecondary: '#b7b5c2',
+  textDisabled:  '#5c5b66',
+  textInverse:   '#0f0f12',
+
+  accent:        '#8d85f0',
+  accentHover:   '#a79fff',
+  accentSubtle:  '#24214a',
+
+  success:       '#6dc590',
+  successSubtle: '#18271f',
+  warning:       '#e2a85a',
+  warningSubtle: '#2a2114',
+  danger:        '#e07676',
+  dangerSubtle:  '#2b1818',
+  info:          '#86a7ec',
+  infoSubtle:    '#171f30',
+}
+
+export type ColorPalette = Record<keyof typeof lightColors, string>
+
+export function getColors(scheme: ColorScheme): ColorPalette {
+  return scheme === 'dark' ? darkColors : lightColors
+}
+
+/**
+ * Default palette export. Prefer `useColors()` from theme/ThemeContext so
+ * styles react to theme changes; this fallback covers places that cannot
+ * subscribe (e.g. non-React code paths).
+ */
+export const colors = lightColors
 
 export const typography = {
   fontFamily: 'Geist_400Regular',   // ThemedText swaps to the matching variant per fontWeight

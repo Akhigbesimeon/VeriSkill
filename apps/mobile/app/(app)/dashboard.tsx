@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { View, ScrollView, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native'
 import { Text } from '@/components/ui/Text'
 import { useFocusEffect, useRouter } from 'expo-router'
@@ -7,8 +7,9 @@ import { useAuthStore } from '@/stores/auth.store'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { useColors } from '@/theme/ThemeContext'
 import api from '@/lib/api'
-import { colors, spacing, typography } from '@/theme/tokens'
+import { spacing, typography, type ColorPalette } from '@/theme/tokens'
 
 interface RecentScan {
   id: string; skill: string; verificationLayer: number; trustScore: number
@@ -19,6 +20,8 @@ interface RecentScan {
 export default function DashboardScreen() {
   const { user } = useAuthStore()
   const router = useRouter()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [scans, setScans]           = useState<RecentScan[]>([])
   const [saved, setSaved]           = useState<RecentScan[]>([])
   const [loading, setLoading]       = useState(true)
@@ -149,27 +152,29 @@ export default function DashboardScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  scroll:        { flex: 1, backgroundColor: colors.bg },
-  container:     { padding: spacing[5], gap: spacing[5] },
-  greeting:      { fontSize: typography.sm, color: colors.textSecondary },
-  name:          { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.textPrimary, marginTop: 2 },
-  error:         { fontSize: typography.sm, color: colors.danger, backgroundColor: colors.dangerSubtle, padding: spacing[3], borderRadius: 6 },
-  cta:           { marginTop: spacing[2] },
-  section:       { gap: spacing[3] },
-  sectionTitle:  { fontSize: typography.base, fontWeight: typography.weightSemibold, color: colors.textPrimary },
-  list:          { gap: spacing[3] },
-  recentCard:    {},
-  emptyText:     { fontSize: typography.sm, color: colors.textSecondary },
-  recentRow:     { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
-  recentLeft:    { flex: 1, gap: spacing[2] },
-  recentSkill:   { fontSize: typography.sm, fontWeight: typography.weightMedium, color: colors.textPrimary },
-  badgeRow:      { flexDirection: 'row', gap: spacing[2], flexWrap: 'wrap' },
-  chevron:       { fontSize: typography.xl, color: colors.textDisabled },
-  greetingRow:   { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
-  searchBtn: {
-    width: 40, height: 40, borderRadius: 20,
-    alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-  },
-})
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    scroll:        { flex: 1, backgroundColor: colors.bg },
+    container:     { padding: spacing[5], gap: spacing[5] },
+    greeting:      { fontSize: typography.sm, color: colors.textSecondary },
+    name:          { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.textPrimary, marginTop: 2 },
+    error:         { fontSize: typography.sm, color: colors.danger, backgroundColor: colors.dangerSubtle, padding: spacing[3], borderRadius: 6 },
+    cta:           { marginTop: spacing[2] },
+    section:       { gap: spacing[3] },
+    sectionTitle:  { fontSize: typography.base, fontWeight: typography.weightSemibold, color: colors.textPrimary },
+    list:          { gap: spacing[3] },
+    recentCard:    {},
+    emptyText:     { fontSize: typography.sm, color: colors.textSecondary },
+    recentRow:     { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
+    recentLeft:    { flex: 1, gap: spacing[2] },
+    recentSkill:   { fontSize: typography.sm, fontWeight: typography.weightMedium, color: colors.textPrimary },
+    badgeRow:      { flexDirection: 'row', gap: spacing[2], flexWrap: 'wrap' },
+    chevron:       { fontSize: typography.xl, color: colors.textDisabled },
+    greetingRow:   { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
+    searchBtn: {
+      width: 40, height: 40, borderRadius: 20,
+      alignItems: 'center', justifyContent: 'center',
+      backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    },
+  })
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native'
 import { Text } from '@/components/ui/Text'
 import { useRouter } from 'expo-router'
@@ -7,8 +7,9 @@ import { useAuthStore } from '@/stores/auth.store'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Card } from '@/components/ui/Card'
+import { useColors } from '@/theme/ThemeContext'
 import api from '@/lib/api'
-import { colors, spacing, typography, radius } from '@/theme/tokens'
+import { spacing, typography, type ColorPalette } from '@/theme/tokens'
 
 interface Stats { totalScans: number; uniqueCandidates: number; scansThisMonth: number }
 interface ActivityPoint { date: string; count: number }
@@ -23,11 +24,12 @@ function formatMemberSince(iso?: string) {
 export default function ProfileScreen() {
   const { user, loadMe, logout } = useAuthStore()
   const router = useRouter()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [stats, setStats] = useState<Stats | null>(null)
   const [activity, setActivity] = useState<ActivityPoint[]>([])
 
   useEffect(() => {
-    // Refresh user so bio/company/createdAt from backend are current after edits.
     loadMe().catch(() => {})
   }, [loadMe])
 
@@ -125,34 +127,36 @@ export default function ProfileScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  scroll:      { flex: 1, backgroundColor: colors.bg },
-  container:   { padding: spacing[5], gap: spacing[4] },
-  heroCard:    { alignItems: 'center', gap: spacing[2], paddingVertical: spacing[6] },
-  avatar: {
-    width: 84, height: 84, borderRadius: 42,
-    backgroundColor: colors.accentSubtle,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing[2],
-  },
-  avatarText:   { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.accent },
-  displayName:  { fontSize: typography.lg, fontWeight: typography.weightSemibold, color: colors.textPrimary },
-  email:        { fontSize: typography.sm, color: colors.textSecondary },
-  sectionTitle: { fontSize: typography.base, fontWeight: typography.weightSemibold, color: colors.textPrimary, marginBottom: spacing[3] },
-  statsRow:     { flexDirection: 'row', gap: spacing[3] },
-  statCard:     { flex: 1, alignItems: 'center', gap: spacing[1], paddingVertical: spacing[4] },
-  statValue:    { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.textPrimary },
-  statLabel:    { fontSize: typography.xs, color: colors.textSecondary, textAlign: 'center' },
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    scroll:      { flex: 1, backgroundColor: colors.bg },
+    container:   { padding: spacing[5], gap: spacing[4] },
+    heroCard:    { alignItems: 'center', gap: spacing[2], paddingVertical: spacing[6] },
+    avatar: {
+      width: 84, height: 84, borderRadius: 42,
+      backgroundColor: colors.accentSubtle,
+      alignItems: 'center', justifyContent: 'center',
+      marginBottom: spacing[2],
+    },
+    avatarText:   { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.accent },
+    displayName:  { fontSize: typography.lg, fontWeight: typography.weightSemibold, color: colors.textPrimary },
+    email:        { fontSize: typography.sm, color: colors.textSecondary },
+    sectionTitle: { fontSize: typography.base, fontWeight: typography.weightSemibold, color: colors.textPrimary, marginBottom: spacing[3] },
+    statsRow:     { flexDirection: 'row', gap: spacing[3] },
+    statCard:     { flex: 1, alignItems: 'center', gap: spacing[1], paddingVertical: spacing[4] },
+    statValue:    { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.textPrimary },
+    statLabel:    { fontSize: typography.xs, color: colors.textSecondary, textAlign: 'center' },
 
-  editBtn:      { position: 'absolute', top: spacing[3], right: spacing[3], padding: spacing[2] },
-  company:      { fontSize: typography.sm, color: colors.textSecondary, marginTop: 2 },
-  memberSince:  { fontSize: typography.xs, color: colors.textDisabled, marginTop: spacing[2] },
-  bio:          { fontSize: typography.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing[3], lineHeight: 20, paddingHorizontal: spacing[3] },
+    editBtn:      { position: 'absolute', top: spacing[3], right: spacing[3], padding: spacing[2] },
+    company:      { fontSize: typography.sm, color: colors.textSecondary, marginTop: 2 },
+    memberSince:  { fontSize: typography.xs, color: colors.textDisabled, marginTop: spacing[2] },
+    bio:          { fontSize: typography.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing[3], lineHeight: 20, paddingHorizontal: spacing[3] },
 
-  sparkCard:    { marginTop: spacing[3], gap: spacing[2] },
-  sparkHead:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  sparkTitle:   { fontSize: typography.sm, fontWeight: typography.weightSemibold, color: colors.textPrimary },
-  sparkSub:     { fontSize: typography.xs, color: colors.textSecondary },
-  sparkRow:     { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 48 },
-  sparkBar:     { flex: 1, backgroundColor: colors.accent, borderRadius: 2, minWidth: 3 },
-})
+    sparkCard:    { marginTop: spacing[3], gap: spacing[2] },
+    sparkHead:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+    sparkTitle:   { fontSize: typography.sm, fontWeight: typography.weightSemibold, color: colors.textPrimary },
+    sparkSub:     { fontSize: typography.xs, color: colors.textSecondary },
+    sparkRow:     { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 48 },
+    sparkBar:     { flex: 1, backgroundColor: colors.accent, borderRadius: 2, minWidth: 3 },
+  })
+}

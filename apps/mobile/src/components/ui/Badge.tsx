@@ -1,21 +1,25 @@
 import { View, StyleSheet } from 'react-native'
 import { Text } from './Text'
-import { colors, spacing, radius, typography } from '@/theme/tokens'
-import { ReactNode } from 'react'
+import { spacing, radius, typography, type ColorPalette } from '@/theme/tokens'
+import { useColors } from '@/theme/ThemeContext'
+import { ReactNode, useMemo } from 'react'
 
 type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'accent'
 
-const variantStyles = {
-  default: { bg: colors.surface2,     text: colors.textSecondary },
-  success: { bg: colors.successSubtle, text: colors.success },
-  warning: { bg: colors.warningSubtle, text: colors.warning },
-  danger:  { bg: colors.dangerSubtle,  text: colors.danger  },
-  info:    { bg: colors.infoSubtle,    text: colors.info    },
-  accent:  { bg: colors.accentSubtle,  text: colors.accent  },
+function variantColors(c: ColorPalette): Record<BadgeVariant, { bg: string; text: string }> {
+  return {
+    default: { bg: c.surface2,      text: c.textSecondary },
+    success: { bg: c.successSubtle, text: c.success },
+    warning: { bg: c.warningSubtle, text: c.warning },
+    danger:  { bg: c.dangerSubtle,  text: c.danger  },
+    info:    { bg: c.infoSubtle,    text: c.info    },
+    accent:  { bg: c.accentSubtle,  text: c.accent  },
+  }
 }
 
 export function Badge({ variant = 'default', children }: { variant?: BadgeVariant; children: ReactNode }) {
-  const v = variantStyles[variant]
+  const colors = useColors()
+  const v = useMemo(() => variantColors(colors)[variant], [colors, variant])
   return (
     <View style={[styles.badge, { backgroundColor: v.bg }]}>
       <Text style={[styles.label, { color: v.text }]}>{children}</Text>

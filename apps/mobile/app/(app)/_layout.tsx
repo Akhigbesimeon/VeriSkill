@@ -2,7 +2,8 @@ import { Tabs, Redirect, Link } from 'expo-router'
 import { TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '@/stores/auth.store'
-import { colors, typography } from '@/theme/tokens'
+import { useColors } from '@/theme/ThemeContext'
+import { typography } from '@/theme/tokens'
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name']
 
@@ -14,6 +15,7 @@ function icon(name: IoniconName, focusedName: IoniconName) {
 
 export default function AppLayout() {
   const user = useAuthStore(s => s.user)
+  const colors = useColors()
   if (!user) return <Redirect href="/(auth)/login" />
 
   return (
@@ -22,6 +24,7 @@ export default function AppLayout() {
         headerShown: true,
         headerStyle:      { backgroundColor: colors.surface },
         headerTitleStyle: { fontSize: typography.base, fontWeight: typography.weightSemibold, color: colors.textPrimary },
+        headerTintColor:  colors.textPrimary,
         headerShadowVisible: false,
         tabBarStyle:           { backgroundColor: colors.surface, borderTopColor: colors.border },
         tabBarActiveTintColor:   colors.textPrimary,

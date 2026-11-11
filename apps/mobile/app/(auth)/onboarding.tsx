@@ -1,4 +1,4 @@
-import { ElementRef, useRef, useState } from 'react'
+import { ElementRef, useMemo, useRef, useState } from 'react'
 import {
   View, ScrollView, StyleSheet, TouchableOpacity,
   useWindowDimensions, NativeSyntheticEvent, NativeScrollEvent,
@@ -6,7 +6,9 @@ import {
 import { useRouter } from 'expo-router'
 import { Text } from '@/components/ui/Text'
 import { Button } from '@/components/ui/Button'
-import { colors, spacing, typography, radius, shadow } from '@/theme/tokens'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { useColors } from '@/theme/ThemeContext'
+import { spacing, typography, radius, shadow, type ColorPalette } from '@/theme/tokens'
 
 type Slide = {
   eyebrow: string
@@ -65,6 +67,8 @@ export default function OnboardingScreen() {
   const [index, setIndex] = useState(0)
   const scrollRef = useRef<ElementRef<typeof ScrollView>>(null)
   const router = useRouter()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
 
   const onMomentumScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const next = Math.round(e.nativeEvent.contentOffset.x / width)
@@ -84,6 +88,7 @@ export default function OnboardingScreen() {
   return (
     <View style={styles.flex}>
       <View style={styles.topBar}>
+        <ThemeToggle />
         <TouchableOpacity
           onPress={() => router.replace('/(auth)/login')}
           accessibilityRole="button"
@@ -163,89 +168,90 @@ export default function OnboardingScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg },
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.bg },
 
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end',
-    paddingHorizontal: spacing[6], paddingTop: spacing[12], paddingBottom: spacing[2],
-  },
-  skip: { fontSize: typography.sm, color: colors.textSecondary, fontWeight: typography.weightMedium },
+    topBar: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      paddingHorizontal: spacing[6], paddingTop: spacing[12], paddingBottom: spacing[2],
+    },
+    skip: { fontSize: typography.sm, color: colors.textSecondary, fontWeight: typography.weightMedium },
 
-  slide: {
-    paddingHorizontal: spacing[6],
-    flex: 1, justifyContent: 'center', alignItems: 'stretch',
-  },
+    slide: {
+      paddingHorizontal: spacing[6],
+      flex: 1, justifyContent: 'center', alignItems: 'stretch',
+    },
 
-  // Credential card — mirrors the web hero visual.
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.xl,
-    padding: spacing[5],
-    gap: spacing[4],
-    ...shadow.md,
-  },
-  cardInk: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
-  cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  cardLabel: {
-    fontSize: typography.xs, color: colors.textSecondary,
-    fontWeight: typography.weightMedium, letterSpacing: 0.3,
-  },
-  cardLabelInk: { color: '#9d99c9' },
-  chip: {
-    paddingHorizontal: spacing[2], paddingVertical: 2,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface2,
-  },
-  chipInk: { backgroundColor: 'rgba(252,251,248,0.12)' },
-  chipText: { fontSize: typography.xs, color: colors.textPrimary, fontWeight: typography.weightMedium },
-  chipTextInk: { color: colors.textInverse },
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1, borderColor: colors.border,
+      borderRadius: radius.xl,
+      padding: spacing[5],
+      gap: spacing[4],
+      ...shadow.md,
+    },
+    cardInk: { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary },
+    cardHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cardLabel: {
+      fontSize: typography.xs, color: colors.textSecondary,
+      fontWeight: typography.weightMedium, letterSpacing: 0.3,
+    },
+    cardLabelInk: { color: '#9d99c9' },
+    chip: {
+      paddingHorizontal: spacing[2], paddingVertical: 2,
+      borderRadius: radius.full,
+      backgroundColor: colors.surface2,
+    },
+    chipInk: { backgroundColor: 'rgba(252,251,248,0.12)' },
+    chipText: { fontSize: typography.xs, color: colors.textPrimary, fontWeight: typography.weightMedium },
+    chipTextInk: { color: colors.textInverse },
 
-  cardSkill: {
-    fontSize: typography['2xl'], fontWeight: typography.weightSemibold,
-    color: colors.textPrimary,
-  },
-  textOnInk: { color: colors.textInverse },
+    cardSkill: {
+      fontSize: typography['2xl'], fontWeight: typography.weightSemibold,
+      color: colors.textPrimary,
+    },
+    textOnInk: { color: colors.textInverse },
 
-  cardFoot: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    borderTopWidth: 1, borderTopColor: colors.border,
-    paddingTop: spacing[3],
-  },
-  footCol: { gap: 2 },
-  footLabel: {
-    fontSize: typography.xs, color: colors.textSecondary,
-    textTransform: 'uppercase', letterSpacing: 0.6,
-  },
-  footLabelInk: { color: '#9d99c9' },
-  footValue: { fontSize: typography.sm, color: colors.textPrimary, fontWeight: typography.weightMedium },
-  score: { fontSize: typography.xl, color: colors.textPrimary, fontWeight: typography.weightBold },
+    cardFoot: {
+      flexDirection: 'row', justifyContent: 'space-between',
+      borderTopWidth: 1, borderTopColor: colors.border,
+      paddingTop: spacing[3],
+    },
+    footCol: { gap: 2 },
+    footLabel: {
+      fontSize: typography.xs, color: colors.textSecondary,
+      textTransform: 'uppercase', letterSpacing: 0.6,
+    },
+    footLabelInk: { color: '#9d99c9' },
+    footValue: { fontSize: typography.sm, color: colors.textPrimary, fontWeight: typography.weightMedium },
+    score: { fontSize: typography.xl, color: colors.textPrimary, fontWeight: typography.weightBold },
 
-  copy: { marginTop: spacing[8], gap: spacing[2] },
-  eyebrow: {
-    fontSize: typography.xs, color: colors.accent,
-    textTransform: 'uppercase', letterSpacing: 0.8,
-    fontWeight: typography.weightSemibold,
-  },
-  heading: {
-    fontSize: typography['2xl'], fontWeight: typography.weightBold,
-    color: colors.textPrimary, lineHeight: 32,
-  },
-  body: {
-    fontSize: typography.base, color: colors.textSecondary, lineHeight: 24,
-  },
+    copy: { marginTop: spacing[8], gap: spacing[2] },
+    eyebrow: {
+      fontSize: typography.xs, color: colors.accent,
+      textTransform: 'uppercase', letterSpacing: 0.8,
+      fontWeight: typography.weightSemibold,
+    },
+    heading: {
+      fontSize: typography['2xl'], fontWeight: typography.weightBold,
+      color: colors.textPrimary, lineHeight: 32,
+    },
+    body: {
+      fontSize: typography.base, color: colors.textSecondary, lineHeight: 24,
+    },
 
-  footer: {
-    paddingHorizontal: spacing[6], paddingBottom: spacing[8], paddingTop: spacing[4],
-    gap: spacing[4],
-  },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing[2], marginBottom: spacing[2] },
-  dot: {
-    width: 6, height: 6, borderRadius: radius.full,
-    backgroundColor: colors.borderStrong,
-  },
-  dotActive: { backgroundColor: colors.textPrimary, width: 20 },
+    footer: {
+      paddingHorizontal: spacing[6], paddingBottom: spacing[8], paddingTop: spacing[4],
+      gap: spacing[4],
+    },
+    dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing[2], marginBottom: spacing[2] },
+    dot: {
+      width: 6, height: 6, borderRadius: radius.full,
+      backgroundColor: colors.borderStrong,
+    },
+    dotActive: { backgroundColor: colors.textPrimary, width: 20 },
 
-  ctaStack: { gap: spacing[2] },
-})
+    ctaStack: { gap: spacing[2] },
+  })
+}

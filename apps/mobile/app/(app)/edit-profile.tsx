@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { View, ScrollView, StyleSheet, TextInput, Alert } from 'react-native'
 import { Text } from '@/components/ui/Text'
 import { useRouter } from 'expo-router'
 import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/stores/auth.store'
+import { useColors } from '@/theme/ThemeContext'
 import { extractErrorMessage } from '@/lib/api'
-import { colors, spacing, typography, radius } from '@/theme/tokens'
+import { spacing, typography, radius, type ColorPalette } from '@/theme/tokens'
 
 export default function EditProfileScreen() {
   const router = useRouter()
   const { user, updateProfile } = useAuthStore()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
 
   const [displayName, setDisplayName] = useState(user?.displayName ?? '')
   const [company,     setCompany]     = useState(user?.company ?? '')
@@ -86,15 +89,17 @@ export default function EditProfileScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  scroll:    { flex: 1, backgroundColor: colors.bg },
-  container: { padding: spacing[5], gap: spacing[5] },
-  label:     { fontSize: typography.sm, fontWeight: typography.weightSemibold, color: colors.textPrimary, marginBottom: spacing[2] },
-  input: {
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[4], paddingVertical: spacing[3],
-    fontSize: typography.base, color: colors.textPrimary,
-  },
-  multiline: { minHeight: 100, paddingTop: spacing[3] },
-})
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    scroll:    { flex: 1, backgroundColor: colors.bg },
+    container: { padding: spacing[5], gap: spacing[5] },
+    label:     { fontSize: typography.sm, fontWeight: typography.weightSemibold, color: colors.textPrimary, marginBottom: spacing[2] },
+    input: {
+      backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing[4], paddingVertical: spacing[3],
+      fontSize: typography.base, color: colors.textPrimary,
+    },
+    multiline: { minHeight: 100, paddingTop: spacing[3] },
+  })
+}

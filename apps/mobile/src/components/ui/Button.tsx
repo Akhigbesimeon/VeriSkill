@@ -1,7 +1,8 @@
 import { TouchableOpacity, ActivityIndicator, StyleSheet, ViewStyle, TextStyle } from 'react-native'
 import { Text } from './Text'
-import { colors, spacing, radius, typography, shadow } from '@/theme/tokens'
-import { ReactNode } from 'react'
+import { spacing, radius, typography, shadow, type ColorPalette } from '@/theme/tokens'
+import { useColors } from '@/theme/ThemeContext'
+import { ReactNode, useMemo } from 'react'
 
 interface ButtonProps {
   onPress?: () => void
@@ -17,6 +18,8 @@ export function Button({
   onPress, variant = 'primary', size = 'md',
   loading = false, disabled = false, children, style,
 }: ButtonProps) {
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const isDisabled = disabled || loading
 
   const containerStyle: ViewStyle[] = [
@@ -50,32 +53,31 @@ export function Button({
   )
 }
 
-const styles = StyleSheet.create({
-  base: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderRadius: radius.md, borderWidth: 1,
-  },
-  disabled: { opacity: 0.5 },
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    base: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      borderRadius: radius.md, borderWidth: 1,
+    },
+    disabled: { opacity: 0.5 },
 
-  // Containers — primary is dark-ink to match web (not the accent); secondary uses the stronger border.
-  container_primary:   { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary, ...shadow.sm },
-  container_secondary: { backgroundColor: colors.surface,     borderColor: colors.borderStrong },
-  container_ghost:     { backgroundColor: 'transparent',      borderColor: 'transparent' },
-  container_danger:    { backgroundColor: colors.danger,      borderColor: colors.danger, ...shadow.sm },
+    container_primary:   { backgroundColor: colors.textPrimary, borderColor: colors.textPrimary, ...shadow.sm },
+    container_secondary: { backgroundColor: colors.surface,     borderColor: colors.borderStrong },
+    container_ghost:     { backgroundColor: 'transparent',      borderColor: 'transparent' },
+    container_danger:    { backgroundColor: colors.danger,      borderColor: colors.danger, ...shadow.sm },
 
-  // Sizes
-  size_sm: { paddingVertical: spacing[1] + 2, paddingHorizontal: spacing[3], minHeight: 32 },
-  size_md: { paddingVertical: spacing[2],     paddingHorizontal: spacing[4], minHeight: 40 },
-  size_lg: { paddingVertical: spacing[3],     paddingHorizontal: spacing[6], minHeight: 48 },
+    size_sm: { paddingVertical: spacing[1] + 2, paddingHorizontal: spacing[3], minHeight: 32 },
+    size_md: { paddingVertical: spacing[2],     paddingHorizontal: spacing[4], minHeight: 40 },
+    size_lg: { paddingVertical: spacing[3],     paddingHorizontal: spacing[6], minHeight: 48 },
 
-  // Labels
-  label: { fontWeight: typography.weightMedium },
-  label_primary:   { color: colors.textInverse },
-  label_secondary: { color: colors.textPrimary },
-  label_ghost:     { color: colors.textSecondary },
-  label_danger:    { color: colors.textInverse },
+    label: { fontWeight: typography.weightMedium },
+    label_primary:   { color: colors.textInverse },
+    label_secondary: { color: colors.textPrimary },
+    label_ghost:     { color: colors.textSecondary },
+    label_danger:    { color: colors.textInverse },
 
-  labelSize_sm: { fontSize: typography.sm },
-  labelSize_md: { fontSize: typography.sm },
-  labelSize_lg: { fontSize: typography.base },
-})
+    labelSize_sm: { fontSize: typography.sm },
+    labelSize_md: { fontSize: typography.sm },
+    labelSize_lg: { fontSize: typography.base },
+  })
+}

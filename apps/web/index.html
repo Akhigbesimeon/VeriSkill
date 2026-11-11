@@ -17,6 +17,18 @@
       rel="stylesheet"
     />
     <title>VeriSkill — verifiable skill credentials</title>
+    <script>
+      // Resolve theme before first paint to avoid a flash.
+      (function () {
+        try {
+          var stored = localStorage.getItem('veriskill:theme')
+          var scheme = stored === 'light' || stored === 'dark'
+            ? stored
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          document.documentElement.setAttribute('data-theme', scheme)
+        } catch (_) {}
+      })()
+    </script>
   </head>
   <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>

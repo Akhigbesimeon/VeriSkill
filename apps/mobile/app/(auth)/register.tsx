@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   View, ScrollView, StyleSheet,
   KeyboardAvoidingView, Platform,
@@ -8,8 +8,10 @@ import { Link, useRouter } from 'expo-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { useColors } from '@/theme/ThemeContext'
 import { extractErrorMessage } from '@/lib/api'
-import { colors, spacing, typography, radius } from '@/theme/tokens'
+import { spacing, typography, radius, type ColorPalette } from '@/theme/tokens'
 
 export default function RegisterScreen() {
   const [displayName, setDisplayName] = useState('')
@@ -18,6 +20,8 @@ export default function RegisterScreen() {
   const [error, setError]             = useState<string | null>(null)
   const { register, isLoading }       = useAuthStore()
   const router = useRouter()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
 
   const validate = (): string | null => {
     if (!displayName.trim()) return 'Display name is required.'
@@ -55,6 +59,10 @@ export default function RegisterScreen() {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.topBar}>
+          <View />
+          <ThemeToggle />
+        </View>
         <Text style={styles.heading}>Create recruiter account</Text>
         <Text style={styles.sub}>This app is for recruiters only</Text>
 
@@ -87,13 +95,23 @@ export default function RegisterScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg },
-  container: { flexGrow: 1, justifyContent: 'center', padding: spacing[6] },
-  heading: { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.textPrimary, marginBottom: spacing[1] },
-  sub: { fontSize: typography.sm, color: colors.textSecondary, marginBottom: spacing[6] },
-  form: { gap: spacing[4] },
-  error: { fontSize: typography.sm, color: colors.danger, backgroundColor: colors.dangerSubtle, padding: spacing[3], borderRadius: radius.md },
-  switchText: { marginTop: spacing[6], fontSize: typography.sm, color: colors.textSecondary, textAlign: 'center' },
-  link: { color: colors.textPrimary, fontWeight: typography.weightMedium },
-})
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.bg },
+    container: { flexGrow: 1, justifyContent: 'center', padding: spacing[6] },
+    topBar: {
+      position: 'absolute',
+      top: spacing[4],
+      left: spacing[6],
+      right: spacing[6],
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+    },
+    heading: { fontSize: typography['2xl'], fontWeight: typography.weightBold, color: colors.textPrimary, marginBottom: spacing[1] },
+    sub: { fontSize: typography.sm, color: colors.textSecondary, marginBottom: spacing[6] },
+    form: { gap: spacing[4] },
+    error: { fontSize: typography.sm, color: colors.danger, backgroundColor: colors.dangerSubtle, padding: spacing[3], borderRadius: radius.md },
+    switchText: { marginTop: spacing[6], fontSize: typography.sm, color: colors.textSecondary, textAlign: 'center' },
+    link: { color: colors.textPrimary, fontWeight: typography.weightMedium },
+  })
+}

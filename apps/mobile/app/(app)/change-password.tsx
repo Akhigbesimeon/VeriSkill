@@ -1,13 +1,16 @@
-import { useState } from 'react'
-import { View, ScrollView, StyleSheet, TextInput, Alert } from 'react-native'
-import { Text } from '@/components/ui/Text'
+import { useMemo, useState } from 'react'
+import { ScrollView, StyleSheet, Alert } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { useColors } from '@/theme/ThemeContext'
 import api, { extractErrorMessage } from '@/lib/api'
-import { colors, spacing, typography, radius } from '@/theme/tokens'
+import { spacing, type ColorPalette } from '@/theme/tokens'
 
 export default function ChangePasswordScreen() {
   const router = useRouter()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword,     setNewPassword]     = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -36,40 +39,28 @@ export default function ChangePasswordScreen() {
 
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-      <View>
-        <Text style={styles.label}>Current password</Text>
-        <TextInput
-          style={styles.input}
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-      </View>
-
-      <View>
-        <Text style={styles.label}>New password</Text>
-        <TextInput
-          style={styles.input}
-          value={newPassword}
-          onChangeText={setNewPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-        <Text style={styles.hint}>At least 8 characters, with one uppercase letter and one number.</Text>
-      </View>
-
-      <View>
-        <Text style={styles.label}>Confirm new password</Text>
-        <TextInput
-          style={styles.input}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          autoCapitalize="none"
-        />
-      </View>
-
+      <Input
+        label="Current password"
+        value={currentPassword}
+        onChangeText={setCurrentPassword}
+        secureTextEntry
+        autoCapitalize="none"
+      />
+      <Input
+        label="New password"
+        value={newPassword}
+        onChangeText={setNewPassword}
+        secureTextEntry
+        autoCapitalize="none"
+        hint="At least 8 characters, with one uppercase letter and one number."
+      />
+      <Input
+        label="Confirm new password"
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+        autoCapitalize="none"
+      />
       <Button onPress={onSave} loading={saving} disabled={saving}>
         Change password
       </Button>
@@ -77,15 +68,9 @@ export default function ChangePasswordScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  scroll:    { flex: 1, backgroundColor: colors.bg },
-  container: { padding: spacing[5], gap: spacing[5] },
-  label:     { fontSize: typography.sm, fontWeight: typography.weightSemibold, color: colors.textPrimary, marginBottom: spacing[2] },
-  input: {
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing[4], paddingVertical: spacing[3],
-    fontSize: typography.base, color: colors.textPrimary,
-  },
-  hint:      { fontSize: typography.xs, color: colors.textSecondary, marginTop: spacing[2] },
-})
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    scroll:    { flex: 1, backgroundColor: colors.bg },
+    container: { padding: spacing[5], gap: spacing[5] },
+  })
+}

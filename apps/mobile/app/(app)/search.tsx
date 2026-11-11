@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { View, StyleSheet, TextInput, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { Text } from '@/components/ui/Text'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
+import { useColors } from '@/theme/ThemeContext'
 import api from '@/lib/api'
-import { colors, spacing, typography, radius } from '@/theme/tokens'
+import { spacing, typography, radius, type ColorPalette } from '@/theme/tokens'
 
 interface SearchResult {
   id:          string
@@ -17,6 +18,8 @@ interface SearchResult {
 
 export default function SearchScreen() {
   const router = useRouter()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [q, setQ] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -102,18 +105,20 @@ export default function SearchScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  page:      { flex: 1, backgroundColor: colors.bg, padding: spacing[5] },
-  searchBar: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing[2],
-    paddingHorizontal: spacing[3], paddingVertical: spacing[2],
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
-    borderRadius: radius.md,
-  },
-  input:     { flex: 1, fontSize: typography.base, color: colors.textPrimary, paddingVertical: spacing[2] },
-  hint:      { fontSize: typography.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing[6] },
-  list:      { paddingVertical: spacing[4] },
-  name:      { fontSize: typography.base, fontWeight: typography.weightSemibold, color: colors.textPrimary },
-  email:     { fontSize: typography.sm, color: colors.textSecondary, marginTop: 2 },
-  badges:    { flexDirection: 'row', gap: spacing[2], flexWrap: 'wrap', marginTop: spacing[3] },
-})
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    page:      { flex: 1, backgroundColor: colors.bg, padding: spacing[5] },
+    searchBar: {
+      flexDirection: 'row', alignItems: 'center', gap: spacing[2],
+      paddingHorizontal: spacing[3], paddingVertical: spacing[2],
+      backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+      borderRadius: radius.md,
+    },
+    input:     { flex: 1, fontSize: typography.base, color: colors.textPrimary, paddingVertical: spacing[2] },
+    hint:      { fontSize: typography.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing[6] },
+    list:      { paddingVertical: spacing[4] },
+    name:      { fontSize: typography.base, fontWeight: typography.weightSemibold, color: colors.textPrimary },
+    email:     { fontSize: typography.sm, color: colors.textSecondary, marginTop: 2 },
+    badges:    { flexDirection: 'row', gap: spacing[2], flexWrap: 'wrap', marginTop: spacing[3] },
+  })
+}

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { View, ScrollView, StyleSheet, TouchableOpacity, Linking, Platform, useColorScheme, Alert, ActivityIndicator } from 'react-native'
+import { useMemo, useState } from 'react'
+import { View, ScrollView, StyleSheet, TouchableOpacity, Linking, Alert, ActivityIndicator } from 'react-native'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as Sharing from 'expo-sharing'
 import { Text } from '@/components/ui/Text'
@@ -7,40 +7,27 @@ import { Card } from '@/components/ui/Card'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import { useAuthStore } from '@/stores/auth.store'
+import { useTheme } from '@/theme/ThemeContext'
 import api from '@/lib/api'
-import { colors, spacing, typography } from '@/theme/tokens'
+import { spacing, typography, type ColorPalette } from '@/theme/tokens'
 
 const APP_VERSION = '0.1.0'
 
-interface RowProps {
-  icon: React.ComponentProps<typeof Ionicons>['name']
-  label: string
-  value?: string
-  busy?: boolean
-  onPress?: () => void
-}
-
-function Row({ icon, label, value, busy, onPress }: RowProps) {
-  const inner = (
-    <View style={styles.row}>
-      <Ionicons name={icon} size={20} color={colors.textPrimary} />
-      <Text style={styles.rowLabel}>{label}</Text>
-      {busy && <ActivityIndicator size="small" color={colors.accent} />}
-      {!busy && value && <Text style={styles.rowValue}>{value}</Text>}
-      {!busy && onPress && <Ionicons name="chevron-forward" size={18} color={colors.textDisabled} />}
-    </View>
-  )
-  return onPress
-    ? <TouchableOpacity activeOpacity={0.6} onPress={onPress} disabled={busy}>{inner}</TouchableOpacity>
-    : inner
-}
+type ThemeMode = 'light' | 'dark' | 'system'
+const THEME_LABEL: Record<ThemeMode, string> = { light: 'Light', dark: 'Dark', system: 'System' }
 
 export default function SettingsScreen() {
   const router = useRouter()
-  const scheme = useColorScheme() ?? 'light'
   const { logout } = useAuthStore()
+  const { colors, scheme, override, setOverride } = useTheme()
+  const styles = useMemo(() => makeStyles(colors), [colors])
   const [exporting, setExporting] = useState(false)
   const [deleting, setDeleting]   = useState(false)
+
+  const cycleTheme = () => {
+    const next: ThemeMode = override === 'system' ? 'light' : override === 'light' ? 'dark' : 'system'
+    setOverride(next)
+  }
 
   const onDeleteAccount = () => {
     Alert.alert(
@@ -90,6 +77,27 @@ export default function SettingsScreen() {
     }
   }
 
+  const Row = ({ icon, label, value, busy, onPress }: {
+    icon: React.ComponentProps<typeof Ionicons>['name']
+    label: string
+    value?: string
+    busy?: boolean
+    onPress?: () => void
+  }) => {
+    const inner = (
+      <View style={styles.row}>
+        <Ionicons name={icon} size={20} color={colors.textPrimary} />
+        <Text style={styles.rowLabel}>{label}</Text>
+        {busy && <ActivityIndicator size="small" color={colors.accent} />}
+        {!busy && value && <Text style={styles.rowValue}>{value}</Text>}
+        {!busy && onPress && <Ionicons name="chevron-forward" size={18} color={colors.textDisabled} />}
+      </View>
+    )
+    return onPress
+      ? <TouchableOpacity activeOpacity={0.6} onPress={onPress} disabled={busy}>{inner}</TouchableOpacity>
+      : inner
+  }
+
   return (
     <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
       <View>
@@ -104,7 +112,8 @@ export default function SettingsScreen() {
           <Row
             icon={scheme === 'dark' ? 'moon-outline' : 'sunny-outline'}
             label="Appearance"
-            value={`Follows ${Platform.OS === 'ios' ? 'iOS' : 'Android'} (${scheme})`}
+            value={THEME_LABEL[override]}
+            onPress={cycleTheme}
           />
         </Card>
       </View>
@@ -155,17 +164,19 @@ export default function SettingsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  scroll:       { flex: 1, backgroundColor: colors.bg },
-  container:    { padding: spacing[5], gap: spacing[5] },
-  sectionTitle: {
-    fontSize: typography.xs, fontWeight: typography.weightSemibold,
-    color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5,
-    marginBottom: spacing[2], marginLeft: spacing[2],
-  },
-  card:    { padding: 0 },
-  row:     { flexDirection: 'row', alignItems: 'center', gap: spacing[3], paddingVertical: spacing[4], paddingHorizontal: spacing[4] },
-  rowLabel: { flex: 1, fontSize: typography.base, fontWeight: typography.weightMedium, color: colors.textPrimary },
-  rowValue: { fontSize: typography.sm, color: colors.textSecondary },
-  divider:  { height: 1, backgroundColor: colors.border, marginLeft: spacing[12] },
-})
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    scroll:       { flex: 1, backgroundColor: colors.bg },
+    container:    { padding: spacing[5], gap: spacing[5] },
+    sectionTitle: {
+      fontSize: typography.xs, fontWeight: typography.weightSemibold,
+      color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5,
+      marginBottom: spacing[2], marginLeft: spacing[2],
+    },
+    card:    { padding: 0 },
+    row:     { flexDirection: 'row', alignItems: 'center', gap: spacing[3], paddingVertical: spacing[4], paddingHorizontal: spacing[4] },
+    rowLabel: { flex: 1, fontSize: typography.base, fontWeight: typography.weightMedium, color: colors.textPrimary },
+    rowValue: { fontSize: typography.sm, color: colors.textSecondary },
+    divider:  { height: 1, backgroundColor: colors.border, marginLeft: spacing[12] },
+  })
+}

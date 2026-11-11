@@ -10,7 +10,19 @@ import {
   Geist_700Bold,
 } from '@expo-google-fonts/geist'
 import { useAuthStore } from '@/stores/auth.store'
-import { colors } from '@/theme/tokens'
+import { ThemeProvider, useTheme } from '@/theme/ThemeContext'
+
+function ThemedShell() {
+  const { scheme, colors } = useTheme()
+  return (
+    <>
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
+      </SafeAreaView>
+    </>
+  )
+}
 
 export default function RootLayout() {
   const loadMe = useAuthStore(s => s.loadMe)
@@ -29,10 +41,9 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }} />
-      </SafeAreaView>
+      <ThemeProvider>
+        <ThemedShell />
+      </ThemeProvider>
     </SafeAreaProvider>
   )
 }

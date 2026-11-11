@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   View, ScrollView, StyleSheet,
   KeyboardAvoidingView, Platform
@@ -8,8 +8,10 @@ import { Link, useRouter } from 'expo-router'
 import { useAuthStore } from '@/stores/auth.store'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { useColors } from '@/theme/ThemeContext'
 import { extractErrorMessage } from '@/lib/api'
-import { colors, spacing, typography } from '@/theme/tokens'
+import { spacing, typography, type ColorPalette } from '@/theme/tokens'
 
 export default function LoginScreen() {
   const [email, setEmail]       = useState('')
@@ -17,6 +19,8 @@ export default function LoginScreen() {
   const [error, setError]       = useState<string | null>(null)
   const { login, logout, isLoading } = useAuthStore()
   const router = useRouter()
+  const colors = useColors()
+  const styles = useMemo(() => makeStyles(colors), [colors])
 
   const handleLogin = async () => {
     if (!email || !password) { setError('Email and password are required.'); return }
@@ -43,6 +47,10 @@ export default function LoginScreen() {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.topBar}>
+          <View />
+          <ThemeToggle />
+        </View>
         <Text style={styles.heading}>Sign in</Text>
         <Text style={styles.sub}>Enter your credentials to continue</Text>
 
@@ -84,39 +92,49 @@ export default function LoginScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.bg },
-  container: {
-    flexGrow: 1, justifyContent: 'center',
-    padding: spacing[6],
-  },
-  heading: {
-    fontSize: typography['2xl'],
-    fontWeight: typography.weightBold,
-    color: colors.textPrimary,
-    marginBottom: spacing[1],
-  },
-  sub: {
-    fontSize: typography.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing[6],
-  },
-  form: { gap: spacing[4] },
-  error: {
-    fontSize: typography.sm,
-    color: colors.danger,
-    backgroundColor: colors.dangerSubtle,
-    padding: spacing[3],
-    borderRadius: 6,
-  },
-  switchText: {
-    marginTop: spacing[6],
-    fontSize: typography.sm,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  link: {
-    color: colors.textPrimary,
-    fontWeight: typography.weightMedium,
-  },
-})
+function makeStyles(colors: ColorPalette) {
+  return StyleSheet.create({
+    flex: { flex: 1, backgroundColor: colors.bg },
+    container: {
+      flexGrow: 1, justifyContent: 'center',
+      padding: spacing[6],
+    },
+    topBar: {
+      position: 'absolute',
+      top: spacing[4],
+      left: spacing[6],
+      right: spacing[6],
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+    },
+    heading: {
+      fontSize: typography['2xl'],
+      fontWeight: typography.weightBold,
+      color: colors.textPrimary,
+      marginBottom: spacing[1],
+    },
+    sub: {
+      fontSize: typography.sm,
+      color: colors.textSecondary,
+      marginBottom: spacing[6],
+    },
+    form: { gap: spacing[4] },
+    error: {
+      fontSize: typography.sm,
+      color: colors.danger,
+      backgroundColor: colors.dangerSubtle,
+      padding: spacing[3],
+      borderRadius: 6,
+    },
+    switchText: {
+      marginTop: spacing[6],
+      fontSize: typography.sm,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    link: {
+      color: colors.textPrimary,
+      fontWeight: typography.weightMedium,
+    },
+  })
+}
