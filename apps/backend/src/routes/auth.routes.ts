@@ -152,10 +152,10 @@ authRouter.post('/change-password', authLimiter, authenticate, async (req: Reque
   } catch (err) { next(err) }
 })
 
-/** DELETE /api/v1/auth/me — soft delete (sets is_active=false). */
+/** DELETE /api/v1/auth/me — deletes the user's credentials and anonymises their personal data; retains the audit log. */
 authRouter.delete('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await AuthService.deactivateAccount(req.user!.id)
+    await AuthService.deleteAccount(req.user!.id)
     res.json({ ok: true })
   } catch (err) { next(err) }
 })

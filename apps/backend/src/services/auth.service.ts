@@ -2,8 +2,11 @@ import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { Op } from 'sequelize'
+import sequelize from '../config/sequelize'
 import { env } from '../config/env'
 import { User, UserRole, WalletType } from '../models/User'
+import { Credential } from '../models/Credential'
+import { AuditLog } from '../models/AuditLog'
 import { ConflictError, UnauthorizedError, ValidationError } from '../middleware/error.middleware'
 import { JwtPayload } from '../middleware/auth.middleware'
 import { sendPasswordResetEmail } from './mailer.service'
@@ -163,11 +166,40 @@ export async function changePassword(userId: string, currentPassword: string, ne
   await user.save()
 }
 
-export async function deactivateAccount(userId: string) {
+export async function deleteAccount(userId: string) {
   const user = await User.findByPk(userId)
   if (!user || !user.isActive) throw new UnauthorizedError('Account not found or inactive')
-  user.isActive = false
-  await user.save()
+
+  await sequelize.transaction(async (tx) => {
+    // Drops evidence URLs, GitHub scans, peer/expert reviews on these credentials,
+    // and their trust-score history via existing FK cascades.
+    await Credential.destroy({ where: { developerId: userId }, transaction: tx })
+
+    const placeholderEmail = `deleted-${crypto.randomUUID()}@deleted.local`
+    const unusablePasswordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), SALT_ROUNDS)
+
+    await user.update({
+      email:                  placeholderEmail,
+      passwordHash:           unusablePasswordHash,
+      displayName:            'Deleted user',
+      bio:                    null,
+      location:               null,
+      company:                null,
+      externalLinks:          [],
+      walletAddress:          null,
+      passwordResetTokenHash: null,
+      passwordResetExpiresAt: null,
+      isActive:               false,
+    }, { transaction: tx })
+
+    await AuditLog.create({
+      actorId:      userId,
+      action:       'user.deleted',
+      resourceType: 'user',
+      resourceId:   userId,
+      payload:      null,
+    }, { transaction: tx })
+  })
 }
 
 export async function updateWallet(

@@ -45,7 +45,7 @@ export default function SettingsScreen() {
   const onDeleteAccount = () => {
     Alert.alert(
       'Delete account?',
-      'Your account will be deactivated. You will be signed out and unable to log back in.',
+      'Your credentials and personal data (email, name, wallet address, submitted evidence URLs) will be permanently deleted. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
