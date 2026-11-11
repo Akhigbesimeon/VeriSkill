@@ -108,9 +108,6 @@ export function OnboardingPage() {
 
       <section className={styles.hero}>
         <div className={styles.heroCopy}>
-          <span className={styles.eyebrow}>
-            Receipts, not r&eacute;sum&eacute;s
-          </span>
           <h1 className={styles.heroTitle}>
             Claims are easy. <em>Credentials are signed, timestamped, and impossible to fake.</em>
           </h1>
