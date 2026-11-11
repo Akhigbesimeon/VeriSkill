@@ -225,21 +225,32 @@
   justify-content: space-between;
 }
 
-/* Variant */
+/* Variant — ink card is pinned to a fixed dark surface so the white child
+   text keeps contrast in both themes. The paper/cream cards use surface
+   tokens so they lift off the page in dark mode too. */
 .variantCream {
-  background: var(--color-bg-tint);
-  border-color: var(--color-border);
+  background: var(--color-surface);
+  border-color: var(--color-border-strong);
   color: var(--color-text-primary);
 }
 .variantPaper {
   background: var(--color-surface-2);
-  border-color: var(--color-border);
+  border-color: var(--color-border-strong);
   color: var(--color-text-primary);
 }
 .variantInk {
-  background: var(--color-text-primary);
-  border-color: var(--color-text-primary);
-  color: var(--color-text-inverse);
+  background: #141418;
+  border-color: #141418;
+  color: #fcfbf8;
+}
+
+/* Dark mode: stop stacked cards from fading into the page and give the
+   ink card a visible edge against the near-black background. */
+:global(:root[data-theme='dark']) .cardBack   { opacity: 0.95; }
+:global(:root[data-theme='dark']) .cardMiddle { opacity: 1; }
+:global(:root[data-theme='dark']) .variantInk {
+  border-color: #3a3a46;
+  box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(255 255 255 / 0.04);
 }
 /* Card children */
 .cardHead {
