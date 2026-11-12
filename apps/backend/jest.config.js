@@ -6,9 +6,10 @@ module.exports = {
   testMatch: ['**/*.test.ts'],
   transform: {
     '^.+\\.ts$': ['ts-jest', {
-      // Match ts-node-dev's --transpile-only to sidestep node16-module import rules.
-      isolatedModules: true,
-      tsconfig: { module: 'commonjs', target: 'ES2022', esModuleInterop: true },
+      // isolatedModules (transpile-only) matches ts-node-dev's --transpile-only and
+      // sidesteps node16-module import rules. It lives in the tsconfig options now;
+      // the top-level ts-jest `isolatedModules` option is deprecated.
+      tsconfig: { module: 'commonjs', target: 'ES2022', esModuleInterop: true, isolatedModules: true },
     }],
   },
 }
