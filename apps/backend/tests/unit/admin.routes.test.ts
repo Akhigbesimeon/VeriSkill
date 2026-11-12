@@ -2,7 +2,7 @@
 // and the analytics aggregation. All models and auth are mocked; no DB.
 
 import express from 'express'
-import { beforeEach, describe, expect, jest, test } from '@jest/globals'
+import { beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 import request from 'supertest'
 
 // ─── Mocks (hoisted) ────────────────────────────────────────────────────────
@@ -116,6 +116,13 @@ function putUser(id: string, role: string, isActive = true): typeof userStore[st
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
 describe('admin.routes — user deactivation guards', () => {
+  // The first makeApp() require()s the whole route graph (express, sequelize,
+  // bcrypt, zod, ...). On a slow disk that can exceed the default 5s test
+  // timeout, so pay for it once here instead of inside the first test.
+  beforeAll(() => {
+    makeApp()
+  }, 60_000)
+
   beforeEach(() => {
     for (const k of Object.keys(userStore)) delete userStore[k]
     auditCreate.mockClear()
@@ -123,11 +130,9 @@ describe('admin.routes — user deactivation guards', () => {
 
   test('admin cannot deactivate their own account', async () => {
     putUser('admin-1', 'administrator')
-    const res = await makeApp()
-      ? await request(makeApp()).post('/admin/users/admin-1/deactivate')
-      : null
-    expect(res!.status).toBe(403)
-    expect(res!.body.error).toMatch(/own account/i)
+    const res = await request(makeApp()).post('/admin/users/admin-1/deactivate')
+    expect(res.status).toBe(403)
+    expect(res.body.error).toMatch(/own account/i)
   })
 
   test('admin cannot deactivate another administrator', async () => {
