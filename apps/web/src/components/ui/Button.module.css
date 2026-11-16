@@ -43,8 +43,8 @@
   box-shadow: var(--shadow-sm), var(--shadow-inset-top);
 }
 .primary:hover:not(:disabled) {
-  background-color: #000;
-  border-color: #000;
+  background-color: color-mix(in srgb, var(--color-text-primary) 88%, var(--color-text-inverse));
+  border-color: color-mix(in srgb, var(--color-text-primary) 88%, var(--color-text-inverse));
   box-shadow: var(--shadow-md), var(--shadow-inset-top);
 }
 

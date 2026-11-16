@@ -58,7 +58,7 @@
   transition: background var(--transition-fast);
 }
 .navCta:hover {
-  background: #26242e;
+  background: color-mix(in srgb, var(--color-text-primary) 88%, var(--color-text-inverse));
 }
 
 /* ─── Hero ──────────────────────────────── */
@@ -135,7 +135,7 @@
   transition: background var(--transition-fast), transform var(--transition-fast);
 }
 .ctaPrimary:hover {
-  background: #26242e;
+  background: color-mix(in srgb, var(--color-text-primary) 88%, var(--color-text-inverse));
   transform: translateY(-1px);
 }
 
