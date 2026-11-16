@@ -165,7 +165,7 @@ export function DashboardPage() {
       </header>
 
       <section className={styles.statsRow} aria-label="Summary statistics">
-        <article className={`${styles.statCard} ${styles.statHero}`}>
+        <article className={styles.statCard}>
           <div className={styles.statHead}>
             <span className={styles.statLabel}>Total credentials</span>
             <span className={styles.statIcon} aria-hidden><Award size={18} strokeWidth={1.75} /></span>
@@ -292,7 +292,7 @@ function AdminDashboardView() {
       </header>
 
       <section className={styles.statsRow} aria-label="Summary statistics">
-        <article className={`${styles.statCard} ${styles.statHero}`}>
+        <article className={styles.statCard}>
           <div className={styles.statHead}>
             <span className={styles.statLabel}>Total users</span>
             <span className={styles.statIcon} aria-hidden><Users size={18} strokeWidth={1.75} /></span>
