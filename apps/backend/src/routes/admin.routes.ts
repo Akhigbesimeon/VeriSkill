@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { fn, col } from 'sequelize'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import sequelize from '../config/sequelize'
 import { authenticate, requireRole } from '../middleware/auth.middleware'
 import { NotFoundError, ForbiddenError, ValidationError, ConflictError, validate } from '../middleware/error.middleware'
 import { Credential } from '../models/Credential'
@@ -217,7 +218,19 @@ adminRouter.get('/credentials', async (_req, res, next) => {
       include: [{ model: User, as: 'developer', attributes: ['id', 'displayName'] }],
       order: [['createdAt', 'DESC']],
     })
-    res.json(credentials)
+
+    const flagRows = await PeerReview.findAll({
+      attributes: ['credentialId', [fn('COUNT', col('id')), 'count']],
+      where: { status: 'FLAGGED', credentialId: credentials.map(c => c.id) },
+      group: ['credential_id'],
+      raw: true,
+    }) as unknown as Array<{ credentialId: string; count: string }>
+    const flagsBy = new Map(flagRows.map(r => [r.credentialId, Number(r.count)]))
+
+    res.json(credentials.map(c => ({
+      ...c.toJSON(),
+      flaggedReviewCount: flagsBy.get(c.id) ?? 0,
+    })))
   } catch (err) { next(err) }
 })
 
@@ -251,6 +264,46 @@ adminRouter.post('/credentials/:id/recompute', async (req: Request, res: Respons
     })
 
     res.json({ message: 'Recomputed', score, layer })
+  } catch (err) { next(err) }
+})
+
+/**
+ * POST /api/v1/admin/credentials/:id/send-back — bounce a flagged credential
+ * back to DRAFT so the developer can revise and resubmit. Marks all FLAGGED
+ * peer reviews EXPIRED so they stop counting against the credential. Evidence
+ * is intentionally preserved — the developer edits from DRAFT themselves.
+ */
+adminRouter.post('/credentials/:id/send-back', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const credential = await Credential.findByPk(req.params.id)
+    if (!credential) throw new NotFoundError('Credential not found')
+    if (['MINTED', 'REVOKED'].includes(credential.lifecycleStatus)) {
+      throw new ValidationError(`Cannot send back a ${credential.lifecycleStatus} credential`)
+    }
+
+    const flagged = await PeerReview.findAll({
+      where: { credentialId: credential.id, status: 'FLAGGED' },
+      attributes: ['id'],
+    })
+
+    await sequelize.transaction(async (tx) => {
+      await credential.update({ lifecycleStatus: 'DRAFT' }, { transaction: tx })
+      if (flagged.length > 0) {
+        await PeerReview.update(
+          { status: 'EXPIRED' },
+          { where: { id: flagged.map(f => f.id) }, transaction: tx },
+        )
+      }
+      await AuditLog.create({
+        actorId:      req.user!.id,
+        action:       'credential.sent_back',
+        resourceType: 'credential',
+        resourceId:   credential.id,
+        payload:      { dismissedReviewIds: flagged.map(f => f.id) },
+      }, { transaction: tx })
+    })
+
+    res.json({ message: 'Sent back to developer', dismissedFlags: flagged.length })
   } catch (err) { next(err) }
 })
 

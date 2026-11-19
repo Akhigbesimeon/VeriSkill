@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ShieldOff, PauseCircle, UserX, UserCheck, UserPlus, RefreshCw } from 'lucide-react'
+import { ShieldOff, PauseCircle, UserX, UserCheck, UserPlus, RefreshCw, Undo2 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import api from '@/lib/api'
@@ -14,6 +14,7 @@ interface AdminCredential {
   lifecycleStatus: string
   trustScore: number
   tokenId: string | null
+  flaggedReviewCount: number
   developer?: { id: string; displayName: string }
 }
 
@@ -109,7 +110,7 @@ export function AdminAnalyticsPage() {
 
 export function AdminCredentialsPage() {
   const qc = useQueryClient()
-  const [confirming, setConfirming]   = useState<{ id: string; action: 'suspend' | 'revoke' } | null>(null)
+  const [confirming, setConfirming]   = useState<{ id: string; action: 'suspend' | 'revoke' | 'send-back' } | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
   const { data, isLoading, isFetching, refetch } = useQuery<AdminCredential[]>({
@@ -120,7 +121,7 @@ export function AdminCredentialsPage() {
   })
 
   const run = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'suspend' | 'revoke' }) =>
+    mutationFn: ({ id, action }: { id: string; action: 'suspend' | 'revoke' | 'send-back' }) =>
       api.post(`/admin/credentials/${id}/${action}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin-credentials'] })
@@ -133,12 +134,16 @@ export function AdminCredentialsPage() {
     },
   })
 
+  const [recomputeMsg, setRecomputeMsg] = useState<string | null>(null)
+
   const recompute = useMutation({
     mutationFn: (id: string) => api.post<{ score: number; layer: number }>(`/admin/credentials/${id}/recompute`),
-    onSuccess: () => {
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['admin-credentials'] })
       qc.invalidateQueries({ queryKey: ['admin-analytics'] })
       setActionError(null)
+      setRecomputeMsg(`Recomputed — score ${res.data.score}, layer ${res.data.layer}`)
+      setTimeout(() => setRecomputeMsg(null), 4000)
     },
     onError: (err: unknown) => {
       const msg = (err as { response?: { data?: { error?: string } } }).response?.data?.error
@@ -156,17 +161,22 @@ export function AdminCredentialsPage() {
         <Button size="sm" variant="ghost" icon={<RefreshCw size={13} />} loading={isFetching} onClick={() => refetch()}>
           Refresh
         </Button>
+        {recomputeMsg && <span className={styles.recomputeMsg} role="status">{recomputeMsg}</span>}
       </div>
 
       {confirming && (
         <div className={styles.confirmBanner} role="alert">
           <p className={styles.confirmText}>
-            Confirm <strong>{confirming.action} credential {confirming.id.slice(0, 8)}…</strong>? This action cannot be undone.
+            Confirm <strong>{confirming.action} credential {confirming.id.slice(0, 8)}…</strong>?
+            {confirming.action === 'send-back'
+              ? ' The developer will revise from DRAFT; existing flags will be cleared.'
+              : ' This action cannot be undone.'}
           </p>
           {actionError && <p className={styles.confirmError}>{actionError}</p>}
           <div className={styles.confirmActions}>
             <Button
-              variant="danger" size="sm" loading={run.isPending}
+              variant={confirming.action === 'send-back' ? 'primary' : 'danger'}
+              size="sm" loading={run.isPending}
               onClick={() => run.mutate(confirming)}
             >
               Confirm {confirming.action}
@@ -199,7 +209,14 @@ export function AdminCredentialsPage() {
                   </td>
                   <td className={styles.skillCell}>{c.skill}</td>
                   <td><Badge variant="default">Layer {c.verificationLayer}</Badge></td>
-                  <td><Badge variant={statusVariant(c.lifecycleStatus)}>{c.lifecycleStatus}</Badge></td>
+                  <td>
+                    <div className={styles.statusCell}>
+                      <Badge variant={statusVariant(c.lifecycleStatus)}>{c.lifecycleStatus}</Badge>
+                      {c.flaggedReviewCount > 0 && (
+                        <Badge variant="danger">Flagged ({c.flaggedReviewCount})</Badge>
+                      )}
+                    </div>
+                  </td>
                   <td className={styles.scoreCell}>{c.trustScore}</td>
                   <td>
                     <div className={styles.actionRow}>
@@ -211,6 +228,15 @@ export function AdminCredentialsPage() {
                       >
                         Recompute
                       </Button>
+                      {c.flaggedReviewCount > 0 && !['MINTED', 'REVOKED'].includes(c.lifecycleStatus) && (
+                        <Button
+                          size="sm" variant="secondary"
+                          icon={<Undo2 size={13} />}
+                          onClick={() => setConfirming({ id: c.id, action: 'send-back' })}
+                        >
+                          Send back
+                        </Button>
+                      )}
                       {['ACTIVE', 'MINTED'].includes(c.lifecycleStatus) && (
                         <Button
                           size="sm" variant="secondary"

@@ -5,9 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "splash": {
-      "backgroundColor": "#4f46b8"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.veriskill.app",
