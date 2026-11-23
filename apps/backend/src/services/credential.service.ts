@@ -210,9 +210,8 @@ export async function submitForReview(credentialId: string, developerId: string)
   }
 
   const { score, layer } = await calculateTrustScore(credentialId)
-  await credential.update({ trustScore: score, verificationLayer: layer, lifecycleStatus: 'PENDING_REVIEW' })
-
   await assignPeerReviewers(credentialId, developerId, layer)
+  await credential.update({ trustScore: score, verificationLayer: layer, lifecycleStatus: 'PENDING_REVIEW' })
 
   return credential.reload()
 }
