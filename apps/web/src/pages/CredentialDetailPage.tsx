@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import QRCode from 'qrcode'
 import { ethers } from 'ethers'
-import { Plus, Send, CheckCircle2, XCircle, Clock, AlertTriangle, ShieldCheck, ChevronDown, ChevronRight, Trash2, ExternalLink } from 'lucide-react'
+import { Plus, Send, CheckCircle2, XCircle, Clock, AlertTriangle, ShieldCheck, ChevronDown, ChevronRight, Trash2, ExternalLink, Download, Share2 } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
@@ -162,6 +162,7 @@ function ExplorerLink({ tokenId }: { tokenId: string }) {
 function QrShare({ credentialId }: { credentialId: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   // QR stays on the mobile deep-link scheme so the native app handles the scan.
   const qrPayload = `veriskill://verify/${credentialId}`
   const verifyBase = (import.meta.env.VITE_VERIFY_BASE_URL as string | undefined) || window.location.origin
@@ -172,6 +173,29 @@ function QrShare({ credentialId }: { credentialId: string }) {
     QRCode.toCanvas(canvasRef.current, qrPayload, { width: 192, margin: 1 })
       .catch(() => setError('Could not render QR code.'))
   }, [qrPayload])
+
+  const handleDownload = () => {
+    if (!canvasRef.current) return
+    const url = canvasRef.current.toDataURL('image/png')
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `veriskill-${credentialId}.png`
+    a.click()
+  }
+
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'VeriSkill credential', url: webUrl })
+        return
+      }
+      await navigator.clipboard.writeText(webUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // user cancelled share or clipboard blocked — no-op
+    }
+  }
 
   return (
     <div className={styles.qrShare}>
@@ -185,6 +209,14 @@ function QrShare({ credentialId }: { credentialId: string }) {
         <a href={webUrl} target="_blank" rel="noopener noreferrer" className={styles.qrShareUrl}>
           {webUrl}
         </a>
+        <div className={styles.qrActions}>
+          <Button type="button" variant="secondary" size="sm" onClick={handleDownload}>
+            <Download size={14} aria-hidden /> Download QR
+          </Button>
+          <Button type="button" variant="secondary" size="sm" onClick={handleShare}>
+            <Share2 size={14} aria-hidden /> {copied ? 'Link copied' : 'Share link'}
+          </Button>
+        </div>
         {error && <span className={styles.qrError}>{error}</span>}
       </div>
     </div>
