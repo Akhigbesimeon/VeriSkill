@@ -1,0 +1,96 @@
+{
+  "generatedAt": "2026-11-27T16:13:05.043Z",
+  "solc": {
+    "version": "0.8.29",
+    "optimizerRuns": 10000,
+    "viaIR": true,
+    "evmVersion": "cancun"
+  },
+  "contracts": {
+    "VeriSkillCredential": {
+      "mint_cold": 430077,
+      "mint_warm2": 412965,
+      "mint_warm3": 412977,
+      "updateLayer": 39982,
+      "suspend": 33357,
+      "unsuspend": 33329,
+      "revoke": 95335,
+      "mint_warm": 412977,
+      "mint_recipient_new": 430065,
+      "mint_recipient_existing": 412965,
+      "batch1_total": 430077,
+      "batch1_perMint": 430077,
+      "batch10_total": 4129770,
+      "batch10_perMint": 412977,
+      "batch50_total": 20648730,
+      "batch50_perMint": 412974,
+      "updateLayer_1to2": 39982,
+      "updateLayer_2to3": 39982,
+      "updateLayer_3to4": 39982,
+      "updateLayer_4to5": 39982,
+      "updateLayer_5to6": 39982,
+      "suspend_2": 33357,
+      "unsuspend_2": 33329,
+      "revoke_2": 95335,
+      "revert_unauth_mint": 25173,
+      "revert_soulbound_transfer": 24565
+    },
+    "ReferenceERC721": {
+      "mint_cold": 187527,
+      "mint_warm2": 170415,
+      "mint_warm3": 170439,
+      "mint_warm": 170439,
+      "batch1_total": 187539,
+      "batch1_perMint": 187539,
+      "batch10_total": 1704378,
+      "batch10_perMint": 170437,
+      "batch50_total": 8521806,
+      "batch50_perMint": 170436
+    },
+    "PackedERC721": {
+      "mint_cold": 141167,
+      "mint_warm2": 124079,
+      "mint_warm3": 124079,
+      "mint_warm": 124067,
+      "mint_recipient_new": 141167,
+      "mint_recipient_existing": 124079,
+      "batch1_total": 141179,
+      "batch1_perMint": 141179,
+      "batch10_total": 1240790,
+      "batch10_perMint": 124079,
+      "batch50_total": 6203830,
+      "batch50_perMint": 124076
+    },
+    "BaselineOZ721": {
+      "mint_cold": 187564,
+      "mint_warm": 170464,
+      "safeMint_warm": 173310,
+      "batch1_total": 187564,
+      "batch1_perMint": 187564,
+      "batch10_total": 1704616,
+      "batch10_perMint": 170461,
+      "batch50_total": 8523104,
+      "batch50_perMint": 170462
+    },
+    "BlobERC721": {
+      "mint_cold": 210453,
+      "mint_warm": 193353,
+      "batch1_total": 210453,
+      "batch1_perMint": 210453,
+      "batch10_total": 1933494,
+      "batch10_perMint": 193349,
+      "batch50_total": 9667446,
+      "batch50_perMint": 193348
+    },
+    "PackedERC721BadOrder": {
+      "mint_cold": 163521,
+      "mint_warm": 146421,
+      "batch1_total": 163521,
+      "batch1_perMint": 163521,
+      "batch10_total": 1464186,
+      "batch10_perMint": 146418,
+      "batch50_total": 7320858,
+      "batch50_perMint": 146417
+    }
+  }
+}

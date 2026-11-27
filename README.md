@@ -77,7 +77,7 @@ An ERC-721 soulbound token with OpenZeppelin `AccessControl`, mirrored as an EAS
 
 ## Gas benchmark
 
-Measured on a local Hardhat node (EVM target Cancun, `viaIR` on, optimizer 200 runs). Each figure is the steady-state cost of the third mint. See [`docs/GAS_BENCHMARK.md`](docs/GAS_BENCHMARK.md) for the full output.
+Measured on a local Hardhat node (EVM target Cancun, `viaIR` on, optimizer 10,000 runs). Each figure is the steady-state (warm) cost of a mint. See [`docs/GAS_BENCHMARK.md`](docs/GAS_BENCHMARK.md) for the methodology, the six-contract matrix (cold/warm/batch/recipient/lifecycle/revert), and the regression guard.
 
 | Comparison | Gas per mint | Difference |
 | ---------- | -----------: | ---------- |

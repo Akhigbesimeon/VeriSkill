@@ -19,6 +19,7 @@ out/
 packages/contracts/artifacts/
 packages/contracts/cache/
 packages/contracts/typechain-types/
+packages/contracts/gas-results.json
 
 # Deployment records — commit only when intentional
 # packages/contracts/deployments/localhost.json  ← intentionally tracked
