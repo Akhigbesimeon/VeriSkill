@@ -80,12 +80,33 @@ export async function calculateTrustScore(
   // weightFactor is DECIMAL in Postgres → Sequelize returns a string; coerce.
   const weightedApprovals = peerReviews.reduce((sum, r) => sum + Number(r.weightFactor), 0)
 
-  if (weightedApprovals >= 3) {
-    // Layer 5: 3+ weighted approvals → 80–90% band → up to 30 pts.
+  // Cluster-diversity gate: counting approvals that all come from the same
+  // network cluster lets a Sybil ring reach Layer 4 trivially. We require ≥2
+  // distinct clusters — ASN when available, IP-hash otherwise. Reviews missing
+  // both fields (legacy rows) are grouped into a single "unknown" cluster.
+  const clusters = new Set<string>()
+  for (const r of peerReviews) {
+    if (r.reviewerAsn !== null && r.reviewerAsn !== undefined) {
+      clusters.add(`ASN#${r.reviewerAsn}`)
+    } else if (r.reviewerIpHash) {
+      clusters.add(`IP#${r.reviewerIpHash.slice(0, 12)}`)
+    } else {
+      clusters.add('unknown')
+    }
+  }
+  const clusterCount = clusters.size
+
+  if (weightedApprovals >= 3 && clusterCount >= 2) {
+    // Layer 5: 3+ weighted approvals from ≥2 clusters → 80–90% band.
     breakdown.peerReview = Math.min(30, Math.round(weightedApprovals * 8))
-  } else if (weightedApprovals >= 1) {
-    // Layer 4: 1–2 weighted approvals → 60–80% band → up to 20 pts.
+  } else if (weightedApprovals >= 1 && clusterCount >= 2) {
+    // Layer 4: 1–2 weighted approvals from ≥2 clusters → 60–80% band.
     breakdown.peerReview = Math.min(20, Math.round(weightedApprovals * 12))
+  } else if (weightedApprovals >= 1) {
+    // Approvals exist but all from one cluster — award points but don't
+    // promote the layer. The sub-score is capped at the Layer 3 ceiling via
+    // the band logic below, so the credential plateaus at Layer 3.
+    breakdown.peerReview = Math.min(10, Math.round(weightedApprovals * 5))
   }
 
   const expertReviews = await ExpertReview.findAll({
@@ -110,10 +131,10 @@ export async function calculateTrustScore(
   if (breakdown.expertReview > 0 && bestExpert?.confidenceRating && bestExpert.confidenceRating >= 3) {
     layer = 6
     score = Math.min(100, Math.max(90, rawScore))
-  } else if (weightedApprovals >= 3) {
+  } else if (weightedApprovals >= 3 && clusterCount >= 2) {
     layer = 5
     score = Math.min(90, Math.max(80, rawScore))
-  } else if (weightedApprovals >= 1) {
+  } else if (weightedApprovals >= 1 && clusterCount >= 2) {
     layer = 4
     score = Math.min(80, Math.max(60, rawScore))
   } else if (breakdown.githubScan > 0) {

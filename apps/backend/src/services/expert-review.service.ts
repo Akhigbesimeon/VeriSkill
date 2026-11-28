@@ -6,8 +6,9 @@ const EXPERT_TARGET = 3
 
 /**
  * System-assigns expert reviewers for a credential once it reaches Layer 5
- * (3+ weighted peer approvals). Idempotent: no-op if any expert reviews
- * already exist for the credential.
+ * (3+ weighted peer approvals) OR a peer review is flagged for review-integrity
+ * reasons (fast submit, near-duplicate rationale). Idempotent: no-op if any
+ * expert reviews already exist for the credential.
  *
  * Selection: oldest-active users with role 'expert_verifier', excluding the
  * credential owner. No anti-collusion weighting — experts are the trust

@@ -121,7 +121,13 @@ async function setScans(credentialId: string, rows: Array<{ scanStatus: string; 
 
 async function setPeers(credentialId: string, approvals: number) {
   const mod: any = await import('../../src/models/PeerReview')
-  mod.__rows[credentialId] = Array.from({ length: approvals }, () => ({ weightFactor: 1.0 }))
+  // Distinct ASNs so the cluster-diversity gate is satisfied; tests that want
+  // to probe single-cluster behaviour live in trust-score.cluster.test.ts.
+  mod.__rows[credentialId] = Array.from({ length: approvals }, (_, i) => ({
+    weightFactor: 1.0,
+    reviewerAsn: 10_000 + i,
+    reviewerIpHash: null,
+  }))
 }
 
 async function setExperts(credentialId: string, rating: number | null) {
@@ -188,11 +194,14 @@ describe('calculateTrustScore — persistence', () => {
     expect(c.update).toHaveBeenCalled()
   })
 
-  test('1 peer approval → Layer 4 (mintable gate)', async () => {
+  test('2 peer approvals from distinct clusters → Layer 4 (mintable gate)', async () => {
+    // The cluster-diversity gate requires approvals from ≥2 distinct network
+    // clusters. setPeers() seeds each approval with a distinct ASN, so N=2
+    // satisfies the gate; the mintable-at-Layer-4 contract still holds.
     const c = makeCredential('c4')
     await setEvidence(c.id, [{ validationStatus: 'VALID', providerTier: 1 }])
     await setScans(c.id, [{ scanStatus: 'COMPLETE', healthScore: 20, skillMatchScore: 6 }])
-    await setPeers(c.id, 1)
+    await setPeers(c.id, 2)
     await setExperts(c.id, null)
 
     const { calculateTrustScore } = await import('../../src/services/trust-score.service')

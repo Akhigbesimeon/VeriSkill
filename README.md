@@ -36,15 +36,21 @@ The 10–20% band is deliberately unassigned. Sub-scores cannot push a credentia
 
 **Sub-scores.** Evidence URLs add up to 20 points (10 per tier-1 provider, 5 per tier-2). The GitHub scan adds up to 20 points from repository health and skill match, minus a penalty for forks. Peer reviews add up to 30 points, and expert review up to 25.
 
-**Anti-collusion.** Peer reviewers are assigned by the system and must be at layer 3 or above. Each review is weighted:
+**Peer-review integrity.** Reviewers are assigned by the system and must meet an eligibility gate (minimum account age, a credential at Layer 3 or above, and a cap on how often they may review the same developer). Each review is weighted; the stored factors are admin-inspectable:
 
-| Condition | Weight |
-| --------- | ------ |
-| Normal review | 1.0 |
-| Reviewer on the same network (ASN) as the developer, or more than one prior mutual review | 0.5 |
-| Reviewer's IP hash matches the developer's (flagged to admins) | 0.0 |
+| Factor | Effect |
+| ------ | ------ |
+| Clean review | Base weight 1.0 |
+| Same ASN as the developer, or prior mutual reviews > 1 | Base weight 0.5 |
+| Reviewer's IP hash matches the developer's (flagged to admins) | Base weight 0.0 |
+| Soft heuristic fires (submitted in seconds, or near-duplicate rationale against the reviewer's own history) | Weight × 0.5, review queued for expert |
+| Reviewer's historical agreement rate with expert outcomes | Weight × (0.5..1.0); neutral for new reviewers |
 
-IP addresses are stored only as SHA-256 hashes.
+Approvals only promote a credential to Layer 4 or 5 if they come from at least two distinct network clusters (ASN when available, IP-hash otherwise). Layer 6 always requires an expert — peer review cannot reach it.
+
+IP addresses are stored only as SHA-256 hashes. Reviewer-facing endpoints strip the developer identity from the credential (partial blinding — the GitHub artifact URL is preserved).
+
+See [`docs/PEER_REVIEW_INTEGRITY.md`](docs/PEER_REVIEW_INTEGRITY.md) for the threat model, the honest list of limits, and the simulation script that compares the old and new rules on synthetic adversary populations.
 
 ## Smart contracts
 

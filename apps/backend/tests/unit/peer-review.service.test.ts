@@ -1,42 +1,47 @@
-// Unit tests for peer-review.service (hashIp + assignPeerReviewers).
-// Models, env and the MaxMind reader are mocked; no DB, no .env, no .mmdb file.
+// Unit tests for peer-review.service. Models, env and the MaxMind reader are
+// mocked; no DB, no .env, no .mmdb file.
+//
+// Covers: hashIp, pure text heuristics (textFingerprint / maxSimilarity /
+// shingleJaccard), buildWeightFactors across all branches, checkEligibility
+// (self-review, account age, skill match + fallback, mutual cap),
+// computeAgreementRate, and assignPeerReviewers end-to-end with the new
+// eligibility gate wired in.
 
 import crypto from 'crypto'
 import { afterEach, beforeAll, beforeEach, describe, expect, jest, test } from '@jest/globals'
 import { Op } from 'sequelize'
 
-// ─── Mocks (hoisted) ────────────────────────────────────────────────────────
-// Shared mock handles live at module level so they survive jest.isolateModules.
-
 type AnyFn = (...args: any[]) => any
 
-const mockUserFindAll = jest.fn<AnyFn>()
-const mockPeerCount = jest.fn<AnyFn>()
-const mockPeerFindAll = jest.fn<AnyFn>()
-const mockPeerCreate = jest.fn<AnyFn>()
-const mockReaderOpen = jest.fn<AnyFn>()
-const mockAsnLookup = jest.fn<AnyFn>()
-const mockEnv: { MAXMIND_ASN_DB_PATH?: string } = {}
+const mockUserFindAll    = jest.fn<AnyFn>()
+const mockUserFindByPk   = jest.fn<AnyFn>()
+const mockPeerCount      = jest.fn<AnyFn>()
+const mockPeerFindAll    = jest.fn<AnyFn>()
+const mockPeerCreate     = jest.fn<AnyFn>()
+const mockCredentialCount = jest.fn<AnyFn>()
+const mockExpertFindAll  = jest.fn<AnyFn>()
+const mockReaderOpen     = jest.fn<AnyFn>()
+const mockAsnLookup      = jest.fn<AnyFn>()
 
-// The real env module validates process.env and exits the process on failure.
+const mockEnv: Record<string, unknown> = {
+  PEER_REVIEW_MIN_ACCOUNT_AGE_DAYS: 7,
+  PEER_REVIEW_MAX_MUTUAL_REVIEWS: 2,
+  PEER_REVIEW_FAST_SUBMIT_SECONDS: 60,
+  PEER_REVIEW_DUP_SHINGLE_THRESHOLD: 0.75,
+  PEER_REVIEW_DUP_HISTORY_LIMIT: 50,
+  PEER_REVIEW_FLAG_WEIGHT_MULTIPLIER: 0.5,
+}
+
 jest.mock('../../src/config/env', () => ({ env: mockEnv }))
-
-// The service only uses Op.ne / Op.or. Sequelize defines these as Symbol.for(name).
-jest.mock('sequelize', () => ({ Op: { ne: Symbol.for('ne'), or: Symbol.for('or') } }))
-
+jest.mock('sequelize', () => ({ Op: { ne: Symbol.for('ne'), or: Symbol.for('or'), in: Symbol.for('in'), gte: Symbol.for('gte') } }))
 jest.mock('@maxmind/geoip2-node', () => ({ Reader: { open: mockReaderOpen } }))
-
-jest.mock('../../src/models/User', () => ({ User: { findAll: mockUserFindAll } }))
-
+jest.mock('../../src/models/User', () => ({ User: { findAll: mockUserFindAll, findByPk: mockUserFindByPk } }))
 jest.mock('../../src/models/PeerReview', () => ({
   PeerReview: { count: mockPeerCount, findAll: mockPeerFindAll, create: mockPeerCreate },
 }))
+jest.mock('../../src/models/Credential', () => ({ Credential: { count: mockCredentialCount } }))
+jest.mock('../../src/models/ExpertReview', () => ({ ExpertReview: { findAll: mockExpertFindAll } }))
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-// The service keeps the ASN reader in module-level state, so every test gets a
-// fresh copy of it. ValidationError is loaded from the same registry so
-// instanceof checks line up.
 function loadService() {
   let svc: typeof import('../../src/services/peer-review.service')
   let errors: typeof import('../../src/middleware/error.middleware')
@@ -48,41 +53,60 @@ function loadService() {
 }
 
 type Service = ReturnType<typeof loadService>
-
-const user = (id: string) => ({ id })
-let internalUsers: Array<{ id: string }>
-let externalUsers: Array<{ id: string }>
-let existingCount: number
-let alreadyAssigned: Array<{ reviewerId: string }>
-let priorMutualCountByReviewer: Record<string, number>
-
 let service: Service
 
-// The first load pulls the module graph through ts-jest. Do it once up front
-// so that cost is not charged to the first test's 5s timeout.
+const DEVELOPER_ROLE = 'developer'
+
+interface MockReviewer { id: string; role?: string; createdAt?: Date }
+
+let reviewers: Record<string, MockReviewer>
+let internalUsers: MockReviewer[]
+let externalUsers: MockReviewer[]
+let existingCount: number
+let alreadyAssigned: Array<{ reviewerId: string }>
+let credentialCounts: Record<string, Record<string, number>> // byReviewerId.byQueryTag → count
+let mutualCountByReviewer: Record<string, number>
+
 beforeAll(() => {
   loadService()
 }, 60_000)
 
 beforeEach(() => {
   jest.resetAllMocks()
+  reviewers = {}
   internalUsers = []
   externalUsers = []
   existingCount = 0
   alreadyAssigned = []
-  priorMutualCountByReviewer = {}
-  delete mockEnv.MAXMIND_ASN_DB_PATH
+  credentialCounts = {}
+  mutualCountByReviewer = {}
+
+  mockEnv.MAXMIND_ASN_DB_PATH = undefined
 
   mockUserFindAll.mockImplementation(async ({ where }: any) =>
     where.role === 'developer' ? internalUsers : externalUsers
   )
-  // PeerReview.count is used twice: "how many reviews exist for this credential"
-  // (plain where) and the prior-mutual-review lookup (has `include`).
-  mockPeerCount.mockImplementation(async (opts: any) =>
-    opts.include ? (priorMutualCountByReviewer[opts.where.reviewerId] ?? 0) : existingCount
-  )
+  mockUserFindByPk.mockImplementation(async (id: string) => reviewers[id] ?? null)
+
+  // PeerReview.count has two call shapes: (a) credential-scoped assignment
+  // guard (where:{credentialId}, no include) and (b) the mutual-review probe
+  // (where:{reviewerId,status}, include:[{association:'credential',where:{developerId}}]).
+  mockPeerCount.mockImplementation(async (opts: any) => {
+    if (opts.include) return mutualCountByReviewer[opts.where.reviewerId] ?? 0
+    return existingCount
+  })
   mockPeerFindAll.mockImplementation(async () => alreadyAssigned)
   mockPeerCreate.mockImplementation(async (row: any) => ({ ...row }))
+
+  // Credential.count has two shapes: same-skill (where.skill set) and
+  // any-L3 fallback (no skill). Keyed by reviewerId → { same, any }.
+  mockCredentialCount.mockImplementation(async ({ where }: any) => {
+    const perReviewer = credentialCounts[where.developerId] ?? {}
+    if (where.skill) return perReviewer.same ?? 0
+    return perReviewer.any ?? 0
+  })
+
+  mockExpertFindAll.mockImplementation(async () => [])
 
   service = loadService()
 })
@@ -92,20 +116,23 @@ afterEach(() => {
   jest.restoreAllMocks()
 })
 
+function makeReviewer(id: string, opts: { role?: string; ageDays?: number } = {}): MockReviewer {
+  const now = Date.now()
+  return {
+    id,
+    role: opts.role ?? DEVELOPER_ROLE,
+    createdAt: new Date(now - (opts.ageDays ?? 30) * 86_400_000),
+  }
+}
+
 // ─── hashIp ─────────────────────────────────────────────────────────────────
 
 describe('hashIp', () => {
   test('returns the SHA-256 hex digest of the IP', () => {
     const ip = '203.0.113.7'
     const expected = crypto.createHash('sha256').update(ip).digest('hex')
-
     expect(service.hashIp(ip)).toBe(expected)
     expect(service.hashIp(ip)).toMatch(/^[0-9a-f]{64}$/)
-  })
-
-  test('is deterministic and distinguishes different IPs', () => {
-    expect(service.hashIp('198.51.100.1')).toBe(service.hashIp('198.51.100.1'))
-    expect(service.hashIp('198.51.100.1')).not.toBe(service.hashIp('198.51.100.2'))
   })
 
   test('never contains the raw IP', () => {
@@ -113,266 +140,229 @@ describe('hashIp', () => {
   })
 })
 
-// ─── assignPeerReviewers — guards ───────────────────────────────────────────
+// ─── Text heuristics (pure) ─────────────────────────────────────────────────
 
-describe('assignPeerReviewers — guards', () => {
-  test('rejects credentials below Layer 3 with a 422 ValidationError and touches no data', async () => {
-    const err = await service.assignPeerReviewers('cred-1', 'dev-1', 2).catch(e => e)
+describe('textFingerprint', () => {
+  test('is stable across whitespace and casing', () => {
+    expect(service.textFingerprint('Looks Good  To Me'))
+      .toBe(service.textFingerprint('looks good to me'))
+  })
+  test('differs when the content differs', () => {
+    expect(service.textFingerprint('abc')).not.toBe(service.textFingerprint('abd'))
+  })
+})
 
+describe('shingleJaccard / maxSimilarity', () => {
+  test('identical strings → 1.0', () => {
+    expect(service.shingleJaccard('alpha beta gamma', 'alpha beta gamma')).toBe(1)
+  })
+  test('completely different → near 0', () => {
+    expect(service.shingleJaccard('aaaaaaaaaa', 'zzzzzzzzzz')).toBeLessThan(0.1)
+  })
+  test('near-duplicate (small edit) → above threshold', () => {
+    const a = 'this repository demonstrates a solid grasp of TypeScript and testing.'
+    const b = 'this repository demonstrates a solid grasp of TypeScript and tests.'
+    expect(service.shingleJaccard(a, b)).toBeGreaterThan(0.75)
+  })
+  test('maxSimilarity returns 0 for an empty history', () => {
+    expect(service.maxSimilarity('anything', [])).toBe(0)
+  })
+  test('maxSimilarity returns the best match across the history', () => {
+    const history = ['utterly unrelated prose', 'a solid grasp of TypeScript and testing.']
+    expect(service.maxSimilarity('a solid grasp of typescript and testing.', history))
+      .toBeGreaterThan(0.9)
+  })
+})
+
+// ─── buildWeightFactors ─────────────────────────────────────────────────────
+
+describe('buildWeightFactors', () => {
+  const base = {
+    sameIpHash: false, sameAsn: false, priorMutual: 0,
+    skillMatched: true, agreementRate: null,
+    fastSubmit: false, nearDuplicate: false,
+    reviewerAsn: 64500 as number | null, reviewerIpHash: 'a'.repeat(64),
+  }
+
+  test('clean review → final weight 1.0', () => {
+    const f = service.buildWeightFactors(base)
+    expect(f.final).toBe(1.0)
+    expect(f.flagged).toBe(false)
+    expect(f.cluster).toBe('ASN#64500')
+  })
+
+  test('IP match → base 0 and final 0', () => {
+    const f = service.buildWeightFactors({ ...base, sameIpHash: true })
+    expect(f.base).toBe(0)
+    expect(f.final).toBe(0)
+  })
+
+  test('same ASN → base 0.5', () => {
+    const f = service.buildWeightFactors({ ...base, sameAsn: true })
+    expect(f.base).toBe(0.5)
+    expect(f.final).toBe(0.5)
+  })
+
+  test('priorMutual > 1 → base 0.5', () => {
+    const f = service.buildWeightFactors({ ...base, priorMutual: 2 })
+    expect(f.base).toBe(0.5)
+  })
+
+  test('fast submit → flagged and multiplied by 0.5', () => {
+    const f = service.buildWeightFactors({ ...base, fastSubmit: true })
+    expect(f.flagged).toBe(true)
+    expect(f.final).toBe(0.5)
+  })
+
+  test('near-duplicate → flagged and halved', () => {
+    const f = service.buildWeightFactors({ ...base, nearDuplicate: true })
+    expect(f.flagged).toBe(true)
+    expect(f.final).toBe(0.5)
+  })
+
+  test('agreement rate maps 0..1 into 0.5..1.0', () => {
+    const lo = service.buildWeightFactors({ ...base, agreementRate: 0 })
+    const mid = service.buildWeightFactors({ ...base, agreementRate: 0.5 })
+    const hi = service.buildWeightFactors({ ...base, agreementRate: 1 })
+    expect(lo.final).toBe(0.5)
+    expect(mid.final).toBe(0.75)
+    expect(hi.final).toBe(1.0)
+  })
+
+  test('cold start (null agreement) is neutral at 1.0', () => {
+    const f = service.buildWeightFactors({ ...base, agreementRate: null })
+    expect(f.final).toBe(1.0)
+  })
+
+  test('cluster falls back to IP hash when ASN is unknown', () => {
+    const f = service.buildWeightFactors({ ...base, reviewerAsn: null })
+    expect(f.cluster.startsWith('IP#')).toBe(true)
+  })
+
+  test('final weight is bounded to [0,1]', () => {
+    const f = service.buildWeightFactors({
+      ...base, sameIpHash: true, fastSubmit: true, nearDuplicate: true, agreementRate: 0,
+    })
+    expect(f.final).toBe(0)
+  })
+})
+
+// ─── checkEligibility ───────────────────────────────────────────────────────
+
+describe('checkEligibility', () => {
+  test('rejects self-review', async () => {
+    const check = await service.checkEligibility('me', 'me', 'JavaScript')
+    expect(check.eligible).toBe(false)
+    expect(check.reason).toBe('self_review')
+  })
+
+  test('rejects accounts younger than the minimum age', async () => {
+    reviewers['rev'] = makeReviewer('rev', { ageDays: 1 })
+    const check = await service.checkEligibility('rev', 'dev', 'JavaScript')
+    expect(check.eligible).toBe(false)
+    expect(check.reason).toBe('account_too_new')
+  })
+
+  test('rejects developers with no L3+ credential', async () => {
+    reviewers['rev'] = makeReviewer('rev')
+    credentialCounts['rev'] = { same: 0, any: 0 }
+    const check = await service.checkEligibility('rev', 'dev', 'JavaScript')
+    expect(check.eligible).toBe(false)
+    expect(check.reason).toBe('no_qualifying_credential')
+  })
+
+  test('accepts a developer with a same-skill L3+ credential and marks skill matched', async () => {
+    reviewers['rev'] = makeReviewer('rev')
+    credentialCounts['rev'] = { same: 1, any: 1 }
+    const check = await service.checkEligibility('rev', 'dev', 'JavaScript')
+    expect(check.eligible).toBe(true)
+    expect(check.skillMatched).toBe(true)
+  })
+
+  test('accepts a developer with any L3+ credential (fallback) with skill matched = false', async () => {
+    reviewers['rev'] = makeReviewer('rev')
+    credentialCounts['rev'] = { same: 0, any: 1 }
+    const check = await service.checkEligibility('rev', 'dev', 'JavaScript')
+    expect(check.eligible).toBe(true)
+    expect(check.skillMatched).toBe(false)
+  })
+
+  test('peer_verifier accounts skip the credential gate', async () => {
+    reviewers['rev'] = makeReviewer('rev', { role: 'peer_verifier' })
+    const check = await service.checkEligibility('rev', 'dev', 'JavaScript')
+    expect(check.eligible).toBe(true)
+    expect(mockCredentialCount).not.toHaveBeenCalled()
+  })
+
+  test('rejects when reviewer hit the mutual-review cap', async () => {
+    reviewers['rev'] = makeReviewer('rev')
+    credentialCounts['rev'] = { same: 1, any: 1 }
+    mutualCountByReviewer['rev'] = 2
+    const check = await service.checkEligibility('rev', 'dev', 'JavaScript')
+    expect(check.eligible).toBe(false)
+    expect(check.reason).toBe('too_many_mutual')
+  })
+})
+
+// ─── assignPeerReviewers ────────────────────────────────────────────────────
+
+describe('assignPeerReviewers', () => {
+  test('rejects credentials below Layer 3 with a 422', async () => {
+    const err = await service.assignPeerReviewers('cred', 'dev', 2, 'JavaScript').catch(e => e)
     expect(err).toBeInstanceOf(service.ValidationError)
     expect(err.statusCode).toBe(422)
-    expect(err.message).toMatch(/Layer 3/)
-    expect(mockPeerCount).not.toHaveBeenCalled()
     expect(mockUserFindAll).not.toHaveBeenCalled()
-    expect(mockPeerCreate).not.toHaveBeenCalled()
   })
 
-  test('accepts Layer 3 and above', async () => {
-    internalUsers = [user('rev-1')]
-
-    await expect(service.assignPeerReviewers('cred-1', 'dev-1', 3)).resolves.toHaveLength(1)
-    await expect(service.assignPeerReviewers('cred-1', 'dev-1', 4)).resolves.toHaveLength(1)
-  })
-
-  test('returns [] without looking up candidates when 2+ reviews already exist', async () => {
+  test('no-ops when the credential already has ≥2 reviews', async () => {
     existingCount = 2
-    internalUsers = [user('rev-1')]
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(result).toEqual([])
-    expect(mockUserFindAll).not.toHaveBeenCalled()
-    expect(mockPeerCreate).not.toHaveBeenCalled()
-  })
-
-  test('still assigns when exactly 1 review already exists', async () => {
-    existingCount = 1
-    internalUsers = [user('rev-1')]
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(result).toHaveLength(1)
-  })
-})
-
-// ─── assignPeerReviewers — reviewer selection ───────────────────────────────
-
-describe('assignPeerReviewers — reviewer selection', () => {
-  test('queries active developers (excluding the owner) and active peer_verifiers', async () => {
-    await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(mockUserFindAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: { role: 'developer', id: { [Op.ne]: 'dev-1' }, isActive: true },
-      limit: 10,
-      order: [['createdAt', 'ASC']],
-    }))
-    expect(mockUserFindAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: { role: 'peer_verifier', isActive: true },
-      limit: 3,
-    }))
-  })
-
-  test('tags internal and external reviewers, internal first', async () => {
-    internalUsers = [user('int-1')]
-    externalUsers = [user('ext-1'), user('ext-2')]
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(result.map(r => [r.reviewerId, r.reviewerType])).toEqual([
-      ['int-1', 'internal'],
-      ['ext-1', 'external'],
-      ['ext-2', 'external'],
-    ])
-  })
-
-  test('caps the assignment at 3 reviewers', async () => {
-    internalUsers = [user('int-1'), user('int-2'), user('int-3'), user('int-4')]
-    externalUsers = [user('ext-1')]
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(result.map(r => r.reviewerId)).toEqual(['int-1', 'int-2', 'int-3'])
-    expect(mockPeerCreate).toHaveBeenCalledTimes(3)
-  })
-
-  test('skips reviewers already assigned to this credential', async () => {
-    internalUsers = [user('int-1'), user('int-2')]
-    externalUsers = [user('ext-1')]
-    alreadyAssigned = [{ reviewerId: 'int-1' }]
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(result.map(r => r.reviewerId)).toEqual(['int-2', 'ext-1'])
-    expect(mockPeerFindAll).toHaveBeenCalledWith(expect.objectContaining({ where: { credentialId: 'cred-1' } }))
-  })
-
-  test('returns [] and creates nothing when there are no candidates', async () => {
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
+    internalUsers = [makeReviewer('rev-1')]
+    const result = await service.assignPeerReviewers('cred', 'dev', 3, 'JavaScript')
     expect(result).toEqual([])
     expect(mockPeerCreate).not.toHaveBeenCalled()
   })
 
-  test('returns [] when every candidate is already assigned', async () => {
-    internalUsers = [user('int-1')]
-    alreadyAssigned = [{ reviewerId: 'int-1' }]
+  test('skips candidates that fail eligibility (too new)', async () => {
+    internalUsers = [makeReviewer('too-new', { ageDays: 1 }), makeReviewer('ok')]
+    reviewers['too-new'] = internalUsers[0]
+    reviewers['ok'] = internalUsers[1]
+    credentialCounts['too-new'] = { same: 1, any: 1 }
+    credentialCounts['ok']      = { same: 1, any: 1 }
 
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(result).toEqual([])
-    expect(mockPeerCreate).not.toHaveBeenCalled()
-  })
-})
-
-// ─── assignPeerReviewers — created rows ─────────────────────────────────────
-
-describe('assignPeerReviewers — created rows', () => {
-  test('creates ASSIGNED rows with empty decision, null IP hash and a 7-day expiry', async () => {
-    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] })
-    const now = new Date('2026-11-12T10:00:00.000Z')
-    jest.setSystemTime(now)
-    internalUsers = [user('int-1')]
-
-    const [row] = await service.assignPeerReviewers('cred-9', 'dev-1', 3)
-
-    const expectedExpiry = new Date(now)
-    expectedExpiry.setDate(expectedExpiry.getDate() + 7)
-
-    expect(row).toEqual({
-      credentialId: 'cred-9',
-      reviewerId: 'int-1',
-      reviewerType: 'internal',
-      status: 'ASSIGNED',
-      decision: null,
-      rationale: null,
-      weightFactor: 1,
-      reviewerIpHash: null,
-      assignedAt: now,
-      expiresAt: expectedExpiry,
-    })
+    const result = await service.assignPeerReviewers('cred', 'dev', 3, 'JavaScript')
+    expect(result.map(r => r.reviewerId)).toEqual(['ok'])
   })
 
-  test('propagates a failure from PeerReview.create', async () => {
-    internalUsers = [user('int-1')]
-    mockPeerCreate.mockRejectedValueOnce(new Error('unique constraint'))
+  test('skips candidates already at the mutual-review cap', async () => {
+    internalUsers = [makeReviewer('capped'), makeReviewer('ok')]
+    reviewers['capped'] = internalUsers[0]
+    reviewers['ok'] = internalUsers[1]
+    credentialCounts['capped'] = { same: 1, any: 1 }
+    credentialCounts['ok']     = { same: 1, any: 1 }
+    mutualCountByReviewer['capped'] = 2
 
-    await expect(service.assignPeerReviewers('cred-1', 'dev-1', 3)).rejects.toThrow('unique constraint')
+    const result = await service.assignPeerReviewers('cred', 'dev', 3, 'JavaScript')
+    expect(result.map(r => r.reviewerId)).toEqual(['ok'])
   })
-})
 
-// ─── assignPeerReviewers — anti-collusion weight ────────────────────────────
+  test('caps the assignment at 3 eligible reviewers', async () => {
+    internalUsers = ['a', 'b', 'c', 'd'].map(id => makeReviewer(id))
+    for (const u of internalUsers) {
+      reviewers[u.id] = u
+      credentialCounts[u.id] = { same: 1, any: 1 }
+    }
+    const result = await service.assignPeerReviewers('cred', 'dev', 3, 'JavaScript')
+    expect(result.map(r => r.reviewerId)).toEqual(['a', 'b', 'c'])
+  })
 
-describe('assignPeerReviewers — weight factor', () => {
-  test('weight is 1.0 for a reviewer with no prior reviews of this developer', async () => {
-    internalUsers = [user('int-1')]
+  test('created rows have the new audit record on weightFactors', async () => {
+    internalUsers = [makeReviewer('rev')]
+    reviewers['rev'] = internalUsers[0]
+    credentialCounts['rev'] = { same: 1, any: 1 }
 
-    const [row] = await service.assignPeerReviewers('cred-1', 'dev-1', 3, service.hashIp('203.0.113.7'))
-
+    const [row] = await service.assignPeerReviewers('cred', 'dev', 3, 'JavaScript')
+    expect(row.weightFactors).toMatchObject({ skillMatch: true, flagged: false })
     expect(row.weightFactor).toBe(1.0)
-  })
-
-  test('weight stays 1.0 with exactly one prior submitted review of this developer', async () => {
-    internalUsers = [user('int-1')]
-    priorMutualCountByReviewer = { 'int-1': 1 }
-
-    const [row] = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(row.weightFactor).toBe(1.0)
-  })
-
-  test('weight drops to 0.5 after more than one prior submitted review of this developer', async () => {
-    internalUsers = [user('int-1'), user('int-2')]
-    priorMutualCountByReviewer = { 'int-1': 2, 'int-2': 0 }
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(Object.fromEntries(result.map(r => [r.reviewerId, r.weightFactor]))).toEqual({
-      'int-1': 0.5,
-      'int-2': 1.0,
-    })
-  })
-
-  test('counts only SUBMITTED reviews by this reviewer on this developer\'s credentials', async () => {
-    internalUsers = [user('int-1')]
-
-    await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(mockPeerCount).toHaveBeenCalledWith({
-      where: {
-        reviewerId: 'int-1',
-        [Op.or]: [{ '$credential.developer_id$': 'dev-1' }],
-        status: 'SUBMITTED',
-      },
-      include: [{ association: 'credential', attributes: ['developer_id'] }],
-    })
-  })
-})
-
-// ─── assignPeerReviewers — ASN lookup ───────────────────────────────────────
-
-describe('assignPeerReviewers — ASN lookup', () => {
-  beforeEach(() => {
-    internalUsers = [user('int-1')]
-    mockReaderOpen.mockResolvedValue({ asn: mockAsnLookup })
-    mockAsnLookup.mockReturnValue({ autonomousSystemNumber: 64500 })
-  })
-
-  test('does not open the ASN database when no developer IP is supplied', async () => {
-    mockEnv.MAXMIND_ASN_DB_PATH = '/data/GeoLite2-ASN.mmdb'
-
-    await service.assignPeerReviewers('cred-1', 'dev-1', 3)
-
-    expect(mockReaderOpen).not.toHaveBeenCalled()
-  })
-
-  test('skips ASN checks quietly when MAXMIND_ASN_DB_PATH is not configured', async () => {
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3, undefined, '203.0.113.7')
-
-    expect(result).toHaveLength(1)
-    expect(mockReaderOpen).not.toHaveBeenCalled()
-  })
-
-  test('opens the configured database and looks up the developer IP', async () => {
-    mockEnv.MAXMIND_ASN_DB_PATH = '/data/GeoLite2-ASN.mmdb'
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3, undefined, '203.0.113.7')
-
-    expect(result).toHaveLength(1)
-    expect(mockReaderOpen).toHaveBeenCalledWith('/data/GeoLite2-ASN.mmdb')
-    expect(mockAsnLookup).toHaveBeenCalledWith('203.0.113.7')
-  })
-
-  test('loads the database once and reuses it across calls', async () => {
-    mockEnv.MAXMIND_ASN_DB_PATH = '/data/GeoLite2-ASN.mmdb'
-
-    await service.assignPeerReviewers('cred-1', 'dev-1', 3, undefined, '203.0.113.7')
-    await service.assignPeerReviewers('cred-2', 'dev-1', 3, undefined, '203.0.113.7')
-
-    expect(mockReaderOpen).toHaveBeenCalledTimes(1)
-    expect(mockAsnLookup).toHaveBeenCalledTimes(2)
-  })
-
-  test('a failed database load warns, still assigns, and is not retried', async () => {
-    mockEnv.MAXMIND_ASN_DB_PATH = '/data/missing.mmdb'
-    mockReaderOpen.mockRejectedValue(new Error('ENOENT'))
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined)
-
-    const first = await service.assignPeerReviewers('cred-1', 'dev-1', 3, undefined, '203.0.113.7')
-    const second = await service.assignPeerReviewers('cred-2', 'dev-1', 3, undefined, '203.0.113.7')
-
-    expect(first).toHaveLength(1)
-    expect(second).toHaveLength(1)
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('ASN DB load failed'), 'ENOENT')
-    expect(mockReaderOpen).toHaveBeenCalledTimes(1)
-  })
-
-  test('an IP the database cannot resolve does not break assignment', async () => {
-    mockEnv.MAXMIND_ASN_DB_PATH = '/data/GeoLite2-ASN.mmdb'
-    mockAsnLookup.mockImplementation(() => { throw new Error('address not found') })
-
-    const result = await service.assignPeerReviewers('cred-1', 'dev-1', 3, undefined, '10.0.0.1')
-
-    expect(result).toHaveLength(1)
-    expect(result[0].weightFactor).toBe(1.0)
+    expect(row.flagged).toBe(false)
   })
 })

@@ -324,6 +324,29 @@ adminRouter.post('/credentials/:id/suspend', async (req: Request, res: Response,
   } catch (err) { next(err) }
 })
 
+/**
+ * GET /api/v1/admin/peer-reviews/:id/factors — expose the per-review weight
+ * audit record (why the review got its final weight). Admin only; never
+ * returned on the reviewer-facing routes.
+ */
+adminRouter.get('/peer-reviews/:id/factors', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const review = await PeerReview.findByPk(req.params.id, {
+      attributes: [
+        'id', 'credentialId', 'reviewerId', 'status', 'decision',
+        'flagged', 'weightFactor', 'weightFactors',
+        'reviewerAsn', 'reviewerIpHash',
+        'assignedAt', 'submittedAt',
+      ],
+    })
+    if (!review) throw new NotFoundError('Peer review not found')
+    res.json({
+      review: review.toJSON(),
+      factors: review.weightFactors,
+    })
+  } catch (err) { next(err) }
+})
+
 /** GET /api/v1/admin/audit-logs — recent audit log */
 adminRouter.get('/audit-logs', async (_req, res, next) => {
   try {

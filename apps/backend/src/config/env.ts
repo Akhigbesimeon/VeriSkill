@@ -85,6 +85,24 @@ const envSchema = z.object({
   // Path to a GeoLite2-ASN.mmdb file. If unset, ASN checks are skipped.
   MAXMIND_ASN_DB_PATH: z.string().optional(),
 
+  // Peer-review integrity (see docs/PEER_REVIEW_INTEGRITY.md). All thresholds
+  // are configurable so field data can tighten or loosen them per environment.
+  PEER_REVIEW_MIN_ACCOUNT_AGE_DAYS: z.coerce.number().int().min(0).default(7),
+  PEER_REVIEW_MAX_MUTUAL_REVIEWS:   z.coerce.number().int().min(1).default(2),
+  // A submission faster than this is considered a weak signal of low effort /
+  // automation. Flag-only, never auto-reject.
+  PEER_REVIEW_FAST_SUBMIT_SECONDS:  z.coerce.number().int().positive().default(60),
+  // Jaccard similarity over character 5-shingles. ≥ this threshold against
+  // any prior submission by the same reviewer: near-duplicate (flag, downweight).
+  // Exact duplicates are always rejected.
+  PEER_REVIEW_DUP_SHINGLE_THRESHOLD: z.coerce.number().min(0).max(1).default(0.75),
+  // How many of the reviewer's last submissions to compare the new rationale
+  // against. Kept small — this is a per-submit O(N) walk.
+  PEER_REVIEW_DUP_HISTORY_LIMIT:     z.coerce.number().int().positive().default(50),
+  // When a soft heuristic fires (fast submit or near-dup), multiply the base
+  // weight by this factor. Never zero — the review still counts, just less.
+  PEER_REVIEW_FLAG_WEIGHT_MULTIPLIER: z.coerce.number().min(0).max(1).default(0.5),
+
   // Redis
   REDIS_URL: z.string().url().default('redis://localhost:6379'),
 
