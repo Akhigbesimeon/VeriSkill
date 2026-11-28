@@ -48,9 +48,26 @@ const envSchema = z.object({
   // unset, no request is treated as mobile — safe default for existing envs.
   MOBILE_API_KEY: z.string().min(32).optional(),
 
+  // Recruiter / ATS API. Comma-separated plaintext keys issued to third-party
+  // integrations (one per ATS/vendor) for GET /api/v1/verify/public/:id and
+  // POST /api/v1/verify/batch. Each key is hashed once at startup; the
+  // middleware does a constant-time compare against the hash of the incoming
+  // header value. When unset, the batch endpoint is disabled and the public
+  // GET remains unauthenticated.
+  RECRUITER_API_KEYS: z.string().optional(),
+  // Per-key window (ms) and max requests for the recruiter API. Scoped by
+  // API key, falling back to IP for unauthenticated calls on /public/:id.
+  RECRUITER_API_RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  RECRUITER_API_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+
   // Blockchain
   RPC_URL: z.string().url().default('http://127.0.0.1:8545'),
   CONTRACT_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/, 'Must be a valid EVM address'),
+  // Chain metadata surfaced in the verify.public response. These are display
+  // strings only; the authoritative chain is the one CONTRACT_ADDRESS is
+  // deployed on. Defaults match Sepolia, which is the pilot network.
+  CHAIN_ID: z.coerce.number().int().positive().default(11_155_111),
+  CHAIN_NAME: z.string().default('sepolia'),
   ISSUER_PRIVATE_KEY: z.string().min(1, 'ISSUER_PRIVATE_KEY is required'),
   ADMIN_PRIVATE_KEY: z.string().optional(),
 

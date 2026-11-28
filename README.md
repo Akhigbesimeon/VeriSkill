@@ -175,6 +175,9 @@ All services read the **root `.env`**. The main variables:
 | `GITHUB_TOKEN` | Read-only fine-grained token for repository scans |
 | `REDIS_URL` | BullMQ job queues |
 | `URL_FETCH_*` | Limits for evidence-URL fetching |
+| `RECRUITER_API_KEYS` | Comma-separated plaintext API keys for the recruiter / ATS batch endpoint. See [`docs/RECRUITER_API.md`](docs/RECRUITER_API.md). |
+| `RECRUITER_API_RATE_LIMIT_WINDOW_MS`, `RECRUITER_API_RATE_LIMIT_MAX` | Per-key rate limit for the recruiter API. |
+| `CHAIN_ID`, `CHAIN_NAME` | Chain metadata surfaced in the public verification verdict (defaults: Sepolia). |
 
 ### 2. Contracts
 
