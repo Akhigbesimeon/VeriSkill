@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, ShieldCheck, Braces } from 'lucide-react'
 import { Badge } from '@/components/ui/Badge'
 import { Card, CardHeader, CardBody } from '@/components/ui/Card'
 import styles from './PublicCredentialPage.module.css'
@@ -24,6 +24,19 @@ function explorerHref(tokenId: string): string | null {
   const contract = import.meta.env.VITE_CONTRACT_ADDRESS as string | undefined
   if (!explorer || !contract) return null
   return `${explorer.replace(/\/$/, '')}/token/${contract}?a=${tokenId}`
+}
+
+function TrustBar({ score }: { score: number }) {
+  const pct = Math.max(0, Math.min(100, score))
+  const color = pct >= 80 ? 'var(--color-success)' : pct >= 60 ? 'var(--color-accent)' : 'var(--color-warning)'
+  return (
+    <div className={styles.barWrap} role="meter" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Trust score">
+      <div className={styles.barTrack}>
+        <div className={styles.barFill} style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className={styles.barLabel}>{pct} / 100</span>
+    </div>
+  )
 }
 
 function Frame({ children }: { children: React.ReactNode }) {
@@ -60,12 +73,16 @@ export function PublicCredentialPage() {
     )
   }
 
-  const href = data.tokenId ? explorerHref(data.tokenId) : null
+  const chainHref = data.tokenId ? explorerHref(data.tokenId) : null
+  const jsonHref  = `/api/v1/verify/public/${data.id}`
 
   return (
     <Frame>
-      <header className={styles.header}>
-        <div>
+      <header className={styles.hero}>
+        <div className={styles.heroIcon} aria-hidden>
+          <ShieldCheck size={28} />
+        </div>
+        <div className={styles.heroBody}>
           <h1 className={styles.title}>{data.skill}</h1>
           <div className={styles.badges}>
             {data.verified
@@ -73,14 +90,24 @@ export function PublicCredentialPage() {
               : <Badge variant="default">{data.lifecycleStatus}</Badge>}
             <Badge variant="default">Layer {data.verificationLayer}</Badge>
             {data.tokenId && <Badge variant="success">On-chain #{data.tokenId}</Badge>}
-            {href && (
-              <a href={href} target="_blank" rel="noopener noreferrer" className={styles.explorerLink}>
+            {chainHref && (
+              <a href={chainHref} target="_blank" rel="noopener noreferrer" className={styles.chip}>
                 View on-chain <ExternalLink size={12} aria-hidden />
               </a>
             )}
+            <a href={jsonHref} target="_blank" rel="noopener noreferrer" className={styles.chip} title="Machine-readable verdict used by ATS integrations">
+              <Braces size={12} aria-hidden /> View as JSON
+            </a>
           </div>
         </div>
       </header>
+
+      <Card>
+        <CardHeader><span className={styles.sectionTitle}>Trust score</span></CardHeader>
+        <CardBody>
+          <TrustBar score={Math.round(data.trustScore)} />
+        </CardBody>
+      </Card>
 
       <Card>
         <CardHeader><span className={styles.sectionTitle}>Credential</span></CardHeader>
@@ -92,12 +119,12 @@ export function PublicCredentialPage() {
                 <dd>{data.developer.displayName}</dd>
               </>
             )}
-            <dt>Trust score</dt>
-            <dd>{Math.round(data.trustScore)} / 100</dd>
             {data.onChainMintedAt && (
               <>
                 <dt>Minted</dt>
-                <dd>{new Date(data.onChainMintedAt).toLocaleDateString()}</dd>
+                <dd>{new Date(data.onChainMintedAt).toLocaleDateString(undefined, {
+                  year: 'numeric', month: 'long', day: 'numeric',
+                })}</dd>
               </>
             )}
             {data.commitHash && (
@@ -106,9 +133,17 @@ export function PublicCredentialPage() {
                 <dd className={styles.mono}>{data.commitHash}</dd>
               </>
             )}
+            <dt>Credential ID</dt>
+            <dd className={styles.mono}>{data.id}</dd>
           </dl>
         </CardBody>
       </Card>
+
+      <footer className={styles.footer}>
+        <ShieldCheck size={12} aria-hidden /> Verified by VeriSkill
+        <span className={styles.footerSep}>·</span>
+        <a href={jsonHref} target="_blank" rel="noopener noreferrer">machine-readable verdict</a>
+      </footer>
     </Frame>
   )
 }
