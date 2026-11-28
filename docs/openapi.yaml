@@ -1,0 +1,171 @@
+openapi: 3.0.3
+info:
+  title: VeriSkill Recruiter API
+  version: 1.0.0
+  description: |
+    Machine-usable credential verification. Public single-credential lookup and
+    API-key authenticated batch lookup for ATS integrations.
+
+    See docs/RECRUITER_API.md for the full narrative and security notes.
+  contact:
+    name: VeriSkill
+    url: https://github.com/Akhigbesimeon/VeriSkill
+
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Local development
+  - url: https://api.veriskill.local/api/v1
+    description: Staging / production (replace with real host)
+
+tags:
+  - name: verify
+    description: Credential verification
+
+paths:
+  /verify/public/{id}:
+    get:
+      tags: [verify]
+      summary: Public single-credential verdict
+      description: |
+        Compact verdict for one credential. No authentication required.
+        Returns 404 with `status: NOT_FOUND` for unknown or unminted credentials.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Verdict returned (status is VALID / SUSPENDED / REVOKED).
+          headers:
+            ETag:          { schema: { type: string } }
+            Cache-Control: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Verdict' }
+        '304':
+          description: Content unchanged (If-None-Match matched).
+        '400':
+          description: Credential id is not a valid UUID.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404':
+          description: Credential not found or not minted.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Verdict' }
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /verify/batch:
+    post:
+      tags: [verify]
+      summary: Batch verification (ATS integration)
+      description: |
+        Up to 50 credential ids per request. Results are returned in input order.
+        Duplicate ids inside one request are collapsed server-side then re-expanded.
+      security:
+        - apiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BatchRequest' }
+      responses:
+        '200':
+          description: Batch verdict.
+          headers:
+            ETag:          { schema: { type: string } }
+            Cache-Control: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BatchResponse' }
+        '304':
+          description: Content unchanged (If-None-Match matched).
+        '401':
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: Validation error (bad id, 0 or >50 ids, malformed body).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationError' }
+        '429':
+          description: Rate limit exceeded.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+components:
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        Plaintext key issued by the VeriSkill operator. Compared constant-time
+        against SHA-256 digests of the configured keys.
+
+  schemas:
+    Verdict:
+      type: object
+      required: [id, status, verifiedAt]
+      properties:
+        id:          { type: string, format: uuid }
+        status:      { type: string, enum: [VALID, SUSPENDED, REVOKED, NOT_FOUND] }
+        skill:       { type: string, nullable: true, example: TypeScript }
+        layer:       { type: integer, nullable: true, minimum: 1, maximum: 6 }
+        trustScore:  { type: number, nullable: true, minimum: 0, maximum: 100 }
+        issuedAt:    { type: string, nullable: true, format: date-time }
+        verifiedAt:  { type: string, format: date-time }
+        onChain:
+          nullable: true
+          type: object
+          required: [chain, chainId, contractAddress]
+          properties:
+            chain:             { type: string, example: sepolia }
+            chainId:           { type: integer, example: 11155111 }
+            contractAddress:   { type: string, example: '0x14032516c8e06CC0530b1BA8F9345B10315b5C4A' }
+            tokenId:           { type: string, nullable: true }
+            easAttestationUid: { type: string, nullable: true }
+            txHash:            { type: string, nullable: true }
+
+    BatchRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { type: string, format: uuid }
+
+    BatchResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items: { $ref: '#/components/schemas/Verdict' }
+
+    Error:
+      type: object
+      required: [error, requestId]
+      properties:
+        error:     { type: string }
+        requestId: { type: string }
+
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            details:
+              type: object
+              description: Zod flatten() output — field-level errors.

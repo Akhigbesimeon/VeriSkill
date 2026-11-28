@@ -13,6 +13,7 @@ import { expertReviewRouter } from './routes/expert-review.routes'
 import { adminRouter } from './routes/admin.routes'
 import { internalRouter } from './routes/internal.routes'
 import { verifyRouter } from './routes/verify.routes'
+import { recruiterApiRouter } from './routes/recruiter-api.routes'
 
 const app = express()
 
@@ -69,6 +70,10 @@ app.use('/api/v1/credentials',  credentialRouter)
 app.use('/api/v1/peer-reviews', peerReviewRouter)
 app.use('/api/v1/expert-reviews', expertReviewRouter)
 app.use('/api/v1/admin',        adminRouter)
+// Recruiter / ATS API — mounted BEFORE verifyRouter so its /public/:id and
+// /batch routes match before the existing dynamic GET /:id catchall. The
+// web/mobile verify contract (verifyRouter) is unchanged.
+app.use('/api/v1/verify',       recruiterApiRouter)
 app.use('/api/v1/verify',       verifyRouter)
 
 // ─── Internal (cron jobs, manual trigger) ──────────────────────────────────────────
